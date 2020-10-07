@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { ConstructNode } from '@aws-cdk/core'
 
-const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? '{}')
-
 /**
  * Finds all key value pairs from context of the form
  * { "namespace:key": "value" } and flattens it to an object
@@ -11,6 +9,7 @@ const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? '{}')
  * @param namespace The prefix to find in the context keys
  */
 export const getContextByNamespace = (namespace: string): any => {
+  const allContext = JSON.parse(process.env.CDK_CONTEXT_JSON ?? '{}')
   const result: any = {}
   const prefix = `${namespace}:`
   for (const [key, value] of Object.entries(allContext)) {
