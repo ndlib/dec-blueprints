@@ -31,6 +31,6 @@
   "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
-  "infraRepoName": "marble-blueprints",
-  "infraSourceBranch": "master"
+  "infraRepoName": "dec-blueprints",
+  "infraSourceBranch": "main"
 }
