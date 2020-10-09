@@ -26,7 +26,7 @@ export class BeehiveStack extends cdk.Stack {
     })
 
     // TODO: [ESU-1474] add proper SSL certificate to distribution
-    
+
     this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistrobution', {
       comment: this.hostname,
       originConfigs: [{
