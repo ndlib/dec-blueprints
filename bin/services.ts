@@ -11,7 +11,8 @@ import { getContextByNamespace } from '../lib/context-helpers'
 const beehiveContext = getContextByNamespace('beehive')
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment): Stacks => {
-  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, { env })
+  const domainStack = app.node.tryGetContext('domainStack')
+  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, { env, domainStack })
   const beehiveStack = new BeehiveStack(app, `${namespace}-beehive`, {
     env,
     foundationStack,
