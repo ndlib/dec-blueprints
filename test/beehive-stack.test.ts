@@ -7,7 +7,8 @@ import { getContextByNamespace } from '../lib/context-helpers'
 test('Test Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack')
+  const domainStack = 'libraries-domain'
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStack })
   const beehiveContext = getContextByNamespace('beehive')
 
   const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, ...beehiveContext })
@@ -100,6 +101,7 @@ test('Test Stack', () => {
         Type: 'AWS::CloudFront::Distribution',
         Properties: {
           DistributionConfig: {
+            Aliases: [],
             Comment: 'MyBeehiveStack',
             CustomErrorResponses: [
               {
@@ -173,7 +175,10 @@ test('Test Stack', () => {
             ],
             PriceClass: 'PriceClass_100',
             ViewerCertificate: {
-              CloudFrontDefaultCertificate: true,
+              AcmCertificateArn: {
+                'Fn::ImportValue': 'libraries-domain:ACMCertificateARN',
+              },
+              SslSupportMethod: 'sni-only',
             },
           },
         },
