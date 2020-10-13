@@ -5,8 +5,8 @@ import { FoundationStack } from '../lib/foundation-stack'
 test('Empty Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const domainStack = 'libraries-domain'
-  const stack = new FoundationStack(app, 'MyFoundationStack', { domainStack })
+  const domainStackName = 'libraries-domain'
+  const stack = new FoundationStack(app, 'MyFoundationStack', { domainStackName })
   // THEN
   expectCDK(stack).to(matchTemplate({
     Resources: {

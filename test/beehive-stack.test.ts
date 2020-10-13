@@ -7,8 +7,8 @@ import { getContextByNamespace } from '../lib/context-helpers'
 test('Test Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const domainStack = 'libraries-domain'
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStack })
+  const domainStackName = 'libraries-domain'
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName })
   const beehiveContext = getContextByNamespace('beehive')
 
   const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, ...beehiveContext })
