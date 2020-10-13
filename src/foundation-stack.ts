@@ -3,7 +3,7 @@ import { Bucket, BucketAccessControl } from '@aws-cdk/aws-s3'
 import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
 
 export interface FoundationStackProps extends cdk.StackProps {
-  readonly domainStack: string;
+  readonly domainStackName: string;
 }
 
 export class FoundationStack extends cdk.Stack {
@@ -26,6 +26,6 @@ export class FoundationStack extends cdk.Stack {
       }],
     })
     // Add shared certificate to use on ALBs, CloudFront Distributions
-    this.certificate = Certificate.fromCertificateArn(this, 'certificate', cdk.Fn.importValue(`${props.domainStack}:ACMCertificateARN`))
+    this.certificate = Certificate.fromCertificateArn(this, 'certificate', cdk.Fn.importValue(`${props.domainStackName}:ACMCertificateARN`))
   }
 }
