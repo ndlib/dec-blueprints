@@ -32,7 +32,7 @@ npm run format
 
 ## How to deploy
 
-TODO: Fill in more details once we get further into the project
+TODO: [ESU-1475] Fill in more details once we get further into the project
 
 ```sh
 cdk deploy <stackname>

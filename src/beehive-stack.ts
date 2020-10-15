@@ -1,5 +1,5 @@
 import * as cdk from '@aws-cdk/core'
-import { CloudFrontAllowedMethods, CloudFrontWebDistribution, OriginAccessIdentity } from '@aws-cdk/aws-cloudfront'
+import { CloudFrontAllowedMethods, CloudFrontWebDistribution, OriginAccessIdentity, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
 import { Bucket } from '@aws-cdk/aws-s3'
 import { SharedServiceStackProps } from './shared-stack-props'
 import { FoundationStack } from './foundation-stack'
@@ -29,6 +29,7 @@ export class BeehiveStack extends cdk.Stack {
 
     this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistrobution', {
       comment: this.hostname,
+      viewerCertificate: ViewerCertificate.fromAcmCertificate(props.foundationStack.certificate),
       originConfigs: [{
         s3OriginSource: {
           s3BucketSource: webBucket,

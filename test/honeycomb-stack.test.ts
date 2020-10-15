@@ -6,7 +6,8 @@ import { HoneycombStack } from '../lib/honeycomb-stack'
 test('Empty Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack')
+  const domainStackName = 'libraries-domain'
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName })
   const stack = new HoneycombStack(app, 'MyBeehiveStack', { foundationStack })
   // THEN
   expectCDK(stack).to(matchTemplate({
