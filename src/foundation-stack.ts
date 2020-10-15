@@ -10,7 +10,7 @@ export class FoundationStack extends cdk.Stack {
   public readonly logBucket: Bucket
   public readonly certificate: ICertificate
 
-  constructor (scope: cdk.Construct, id: string, props?: FoundationStackProps) {
+  constructor (scope: cdk.Construct, id: string, props: FoundationStackProps) {
     super(scope, id, props)
 
     // The code that defines your stack goes here

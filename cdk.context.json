@@ -5,7 +5,6 @@
       "region": "us-east-1",
       "useVpcId": "vpc-797fed1d",
       "createDns": true,
-      "domainStackName": "libraries-domain",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -15,7 +14,6 @@
       "region": "us-east-1",
       "useVpcId": "vpc-55c35e30",
       "createDns": false,
-      "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",

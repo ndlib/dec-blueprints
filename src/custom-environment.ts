@@ -27,10 +27,10 @@ export class CustomEnvironment implements Environment {
   readonly domainName: string
 
   /**
-   * The domain stack that should be used to lookup an SSL Certificate
+   * The name of the domain stack that should be used to lookup an SSL Certificate
    */
 
-   readonly domainStack: string
+   readonly domainStackName: string
 
   /**
    * If true, the app will find an existing zone by the domainName given.
