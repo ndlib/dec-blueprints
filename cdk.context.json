@@ -17,7 +17,6 @@
       "domainStackName": "library-domain",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
       "createGithubWebhooks": true
     }
   },
