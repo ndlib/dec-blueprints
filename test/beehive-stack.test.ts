@@ -101,7 +101,19 @@ test('Test Stack', () => {
         Type: 'AWS::CloudFront::Distribution',
         Properties: {
           DistributionConfig: {
-            Aliases: [],
+            Aliases: [
+              {
+                'Fn::Join': [
+                  '',
+                  [
+                    'undefined.',
+                    {
+                      'Fn::ImportValue': 'undefined:DomainName',
+                    },
+                  ],
+                ],
+              },
+            ],
             Comment: 'MyBeehiveStack',
             CustomErrorResponses: [
               {
