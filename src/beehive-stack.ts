@@ -5,6 +5,7 @@ import { SharedServiceStackProps } from './shared-stack-props'
 import { FoundationStack } from './foundation-stack'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
+  readonly domainStackName: string,
   readonly hostnamePrefix: string,
   readonly foundationStack: FoundationStack
 }
@@ -25,11 +26,12 @@ export class BeehiveStack extends cdk.Stack {
       serverAccessLogsPrefix: `s3/${this.hostname}`,
     })
 
-    // TODO: [ESU-1474] add proper SSL certificate to distribution
-
     this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistrobution', {
       comment: this.hostname,
-      viewerCertificate: ViewerCertificate.fromAcmCertificate(props.foundationStack.certificate),
+      aliasConfiguration:{
+        names: [props.hostnamePrefix + `.` + cdk.Fn.importValue(`${props.domainStackName}:DomainName`)],
+        acmCertRef: props.foundationStack.certificate.certificateArn,
+      },
       originConfigs: [{
         s3OriginSource: {
           s3BucketSource: webBucket,
