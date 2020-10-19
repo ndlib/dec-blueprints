@@ -1,12 +1,15 @@
 import * as cdk from '@aws-cdk/core'
 import { CloudFrontAllowedMethods, CloudFrontWebDistribution, OriginAccessIdentity, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
+import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { Bucket } from '@aws-cdk/aws-s3'
 import { SharedServiceStackProps } from './shared-stack-props'
 import { FoundationStack } from './foundation-stack'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
+  readonly contextEnvName: string,
   readonly domainStackName: string,
   readonly hostnamePrefix: string,
+  readonly createDns: boolean,
   readonly foundationStack: FoundationStack
 }
 
@@ -63,5 +66,15 @@ export class BeehiveStack extends cdk.Stack {
         },
       ],
     })
+    // Create DNS record (conditionally)
+    if (props.createDns) {
+      const record = new CnameRecord(this, 'BeehiveCNAME', { // I added this const to fix a linting error of "Do not use 'new' for side effects."
+        recordName: this.hostname,
+        comment: this.hostname,
+        domainName: this.cloudfront.distributionDomainName,
+        zone: props.foundationStack.hostedZone,
+        ttl: cdk.Duration.minutes(15),
+      })
+    }
   }
 }
