@@ -8,7 +8,8 @@ test('Test Stack', () => {
   const app = new cdk.App()
   // WHEN
   const domainStackName = 'libraries-domain'
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName })
+  const useExistingDnsZone = false
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName, useExistingDnsZone })
   const beehiveContext = getContextByNamespace('beehive')
 
   const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, ...beehiveContext })
