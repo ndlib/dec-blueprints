@@ -12,16 +12,17 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   // Construct common props that are required by all service stacks
   const commonProps = {
     namespace,
-    account: env.account,
-    region: env.region,
     useVpcId: env.useVpcId,
     contextEnvName: env.name,
     createDns: env.createDns,
     domainStackName: env.domainStackName,
-
+    env: env.env,
   }
-  const domainStackName = app.node.tryGetContext('domainStack')
-  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, { ...commonProps })
+
+  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
+    useExistingDnsZone: env.useExistingDnsZone,
+    ...commonProps,
+  })
 
   const beehiveContext = getContextByNamespace('beehive')
   const beehiveStack = new BeehiveStack(app, `${namespace}-beehive`, {
@@ -30,9 +31,9 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...beehiveContext,
   })
 
-  const buzzStack = new BuzzStack(app, `${namespace}-buzz`, { env, foundationStack })
-  const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, { env, foundationStack })
-  const honeypotStack = new HoneypotStack(app, `${namespace}-honeypot`, { env, foundationStack })
+  const buzzStack = new BuzzStack(app, `${namespace}-buzz`, { foundationStack, ...commonProps })
+  const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, { foundationStack, ...commonProps })
+  const honeypotStack = new HoneypotStack(app, `${namespace}-honeypot`, { foundationStack, ...commonProps })
 
   return { foundationStack, beehiveStack, buzzStack, honeycombStack, honeypotStack }
 }
