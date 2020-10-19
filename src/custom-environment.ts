@@ -1,10 +1,15 @@
-import { ConstructNode, Environment, StackProps } from '@aws-cdk/core'
+import { ConstructNode, Environment } from '@aws-cdk/core'
 import { getRequiredContext } from './context-helpers'
 
 export class CustomEnvironment implements Environment {
   readonly account: string
   readonly region: string
 
+  /**
+   * Defined environment of account, region, and name
+   */
+
+  readonly env: Environment
   /**
    * Name of the environment
    */
@@ -65,6 +70,7 @@ export class CustomEnvironment implements Environment {
       throw new Error(`Context key 'environments.${name}' is required.`)
     }
     contextEnv.name = name
+    contextEnv.env = { account: contextEnv.account, region: contextEnv.region, name: contextEnv.name }
     return contextEnv
   }
 }
