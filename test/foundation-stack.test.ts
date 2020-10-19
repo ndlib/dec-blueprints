@@ -1,35 +1,23 @@
-import { expect as expectCDK, MatchStyle, matchTemplate } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { FoundationStack } from '../lib/foundation-stack'
+import helpers = require('../test/helpers')
 
-test('Empty Stack', () => {
-  const app = new cdk.App()
-  // WHEN
-  const domainStackName = 'libraries-domain'
-  const stack = new FoundationStack(app, 'MyFoundationStack', { domainStackName })
-  // THEN
-  expectCDK(stack).to(matchTemplate({
-    Resources: {
-      logBucket1FE17E85: {
-        Type: 'AWS::S3::Bucket',
-        Properties: {
-          AccessControl: 'LogDeliveryWrite',
-          LifecycleConfiguration: {
-            Rules: [
-              {
-                ExpirationInDays: 365,
-                NoncurrentVersionExpirationInDays: 1,
-                Status: 'Enabled',
-              },
-            ],
-          },
-          VersioningConfiguration: {
-            Status: 'Enabled',
-          },
-        },
-        UpdateReplacePolicy: 'Retain',
-        DeletionPolicy: 'Retain',
-      },
-    },
-  }, MatchStyle.EXACT))
+describe('when useExistingDnsZone is true', () => {
+  beforeEach(() => {
+    helpers.mockHostedZoneFromLookup()
+  })
+
+  const stack = () => {
+    const app = new cdk.App()
+    return new FoundationStack(app, 'MyTestStack', {
+      domainStackName: 'test.edu',
+      useExistingDnsZone: true,
+    })
+  }
+
+  test('does not create a Route53 Zone', () => {
+    const newStack = stack()
+    expectCDK(newStack).notTo(haveResource('AWS::Route53::HostedZone'))
+  })
 })
