@@ -6,11 +6,6 @@ export class CustomEnvironment implements Environment {
   readonly region: string
 
   /**
-   * Defined environment of account, region, and name
-   */
-
-  readonly env: Environment
-  /**
    * Name of the environment
    */
   readonly name: string
@@ -70,7 +65,6 @@ export class CustomEnvironment implements Environment {
       throw new Error(`Context key 'environments.${name}' is required.`)
     }
     contextEnv.name = name
-    contextEnv.env = { account: contextEnv.account, region: contextEnv.region, name: contextEnv.name }
     return contextEnv
   }
 }
