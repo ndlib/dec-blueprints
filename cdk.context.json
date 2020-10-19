@@ -5,6 +5,7 @@
       "region": "us-east-1",
       "useVpcId": "vpc-797fed1d",
       "createDns": true,
+      "domainStackName": "libraries-domain",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
