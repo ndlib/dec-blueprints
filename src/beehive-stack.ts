@@ -32,7 +32,7 @@ export class BeehiveStack extends cdk.Stack {
     this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistribution', {
       comment: this.hostname,
       aliasConfiguration: {
-        names: [props.hostnamePrefix + '.' + cdk.Fn.importValue(`${props.domainStackName}:DomainName`)],
+        names: [this.hostname + '.' + cdk.Fn.importValue(`${props.domainStackName}:DomainName`)],
         acmCertRef: props.foundationStack.certificate.certificateArn,
       },
       originConfigs: [{
