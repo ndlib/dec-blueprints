@@ -29,7 +29,7 @@ export class BeehiveStack extends cdk.Stack {
       serverAccessLogsPrefix: `s3/${this.hostname}`,
     })
 
-    this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistrobution', {
+    this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistribution', {
       comment: this.hostname,
       aliasConfiguration: {
         names: [props.hostnamePrefix + '.' + cdk.Fn.importValue(`${props.domainStackName}:DomainName`)],
