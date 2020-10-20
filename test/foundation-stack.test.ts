@@ -1,24 +1,117 @@
-import { expect as expectCDK, haveResource } from '@aws-cdk/assert'
+import { expect as expectCDK, haveOutput, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { FoundationStack } from '../lib/foundation-stack'
 import helpers = require('../test/helpers')
 
-describe('when useExistingDnsZone is true', () => {
-  beforeEach(() => {
-    helpers.mockHostedZoneFromLookup()
+describe('FoundationStack', () => {
+  describe('when useExistingDnsZone is true', () => {
+    beforeEach(() => {
+      helpers.mockHostedZoneFromLookup()
+    })
+
+    const stack = () => {
+      const app = new cdk.App()
+      return new FoundationStack(app, 'MyTestStack', {
+        domainStackName: 'test-edu-domain',
+        domainName: 'test.edu',
+        useExistingDnsZone: true,
+      })
+    }
+
+    test('does not create a Route53 Zone', () => {
+      const newStack = stack()
+      expectCDK(newStack).notTo(haveResource('AWS::Route53::HostedZone'))
+    })
+
+    describe('S3 Bucket tests', () => {
+      test('creates a bucket with ACL for logging', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
+          AccessControl: 'LogDeliveryWrite',
+        }))
+      })
+
+      test('Log Bucket expires old versions', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResourceLike('AWS::S3::Bucket', {
+          LifecycleConfiguration: {
+            Rules: [
+              {
+                NoncurrentVersionExpirationInDays: 1,
+                Status: 'Enabled',
+              },
+            ],
+          },
+        }))
+      })
+
+      test('Log Bucket expires objects after 365 days', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResourceLike('AWS::S3::Bucket', {
+          LifecycleConfiguration: {
+            Rules: [
+              {
+                ExpirationInDays: 365,
+                Status: 'Enabled',
+              },
+            ],
+          },
+        }))
+      })
+    })
   })
 
-  const stack = () => {
-    const app = new cdk.App()
-    return new FoundationStack(app, 'MyTestStack', {
-      domainStackName: 'test-edu=domain',
-      domainName: 'test.edu',
-      useExistingDnsZone: true,
-    })
-  }
+  describe('when useExistingDnsZone is false', () => {
+    const stack = () => {
+      const app = new cdk.App()
+      return new FoundationStack(app, 'MyTestStack', {
+        domainStackName: 'test-edu-domain',
+        domainName: 'test.edu',
+        useExistingDnsZone: false,
+      })
+    }
 
-  test('does not create a Route53 Zone', () => {
-    const newStack = stack()
-    expectCDK(newStack).notTo(haveResource('AWS::Route53::HostedZone'))
+    test('creates a Route53 Zone', () => {
+      const newStack = stack()
+      expectCDK(newStack).to(haveResource('AWS::Route53::HostedZone', {
+        Name: 'test.edu.',
+      }))
+    })
+    describe('S3 Bucket tests', () => {
+      test('creates a bucket with ACL for logging', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
+          AccessControl: 'LogDeliveryWrite',
+        }))
+      })
+
+      test('Log Bucket expires old versions', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResourceLike('AWS::S3::Bucket', {
+          LifecycleConfiguration: {
+            Rules: [
+              {
+                NoncurrentVersionExpirationInDays: 1,
+                Status: 'Enabled',
+              },
+            ],
+          },
+        }))
+      })
+
+      test('Log Bucket expires objects after 365 days', () => {
+        const newStack = stack()
+        expectCDK(newStack).to(haveResourceLike('AWS::S3::Bucket', {
+          LifecycleConfiguration: {
+            Rules: [
+              {
+                ExpirationInDays: 365,
+                Status: 'Enabled',
+              },
+            ],
+          },
+        }))
+      })
+    })
   })
 })
