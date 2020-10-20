@@ -12,8 +12,20 @@ describe('FoundationStack', () => {
     const stack = () => {
       const app = new cdk.App()
       return new FoundationStack(app, 'MyTestStack', {
-        domainStackName: 'test-edu-domain',
-        domainName: 'test.edu',
+        env: {
+          name: 'test',
+          domainName: 'test.edu',
+          domainStackName: 'test-edu-domain',
+          region: 'test-region',
+          account: 'test-account',
+          createDns: true,
+          useVpcId: '123456',
+          slackNotifyStackName: 'slack-test',
+          createGithubWebhooks: false,
+          useExistingDnsZone: true,
+          notificationReceivers: 'test@test.edu',
+          alarmsEmail: 'test@test.edu',
+        },
         useExistingDnsZone: true,
       })
     }
@@ -65,9 +77,21 @@ describe('FoundationStack', () => {
     const stack = () => {
       const app = new cdk.App()
       return new FoundationStack(app, 'MyTestStack', {
-        domainStackName: 'test-edu-domain',
-        domainName: 'test.edu',
         useExistingDnsZone: false,
+        env: {
+          name: 'test',
+          domainName: 'test.edu',
+          domainStackName: 'test-edu-domain',
+          region: 'test-region',
+          account: 'test-account',
+          createDns: true,
+          useVpcId: '123456',
+          slackNotifyStackName: 'slack-test',
+          createGithubWebhooks: false,
+          useExistingDnsZone: false,
+          notificationReceivers: 'test@test.edu',
+          alarmsEmail: 'test@test.edu',
+        },
       })
     }
 

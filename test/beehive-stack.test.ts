@@ -7,13 +7,25 @@ import { getContextByNamespace } from '../lib/context-helpers'
 test('Test Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const domainStackName = 'libraries-domain'
-  const domainName = 'libraries.nd.edu'
+  const env = {
+    name: 'test',
+    domainName: 'test.edu',
+    domainStackName: 'test-edu-domain',
+    region: 'test-region',
+    account: 'test-account',
+    createDns: true,
+    useVpcId: '123456',
+    slackNotifyStackName: 'slack-test',
+    createGithubWebhooks: false,
+    useExistingDnsZone: false,
+    notificationReceivers: 'test@test.edu',
+    alarmsEmail: 'test@test.edu',
+  }
   const useExistingDnsZone = false
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName, domainName, useExistingDnsZone })
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, useExistingDnsZone })
   const beehiveContext = getContextByNamespace('beehive')
 
-  const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, ...beehiveContext })
+  const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, env, ...beehiveContext })
   // THEN
   expectCDK(stack).to(matchTemplate({
     Resources: {
@@ -108,9 +120,9 @@ test('Test Stack', () => {
                 'Fn::Join': [
                   '',
                   [
-                    'undefined.',
+                    'MyBeehiveStack.',
                     {
-                      'Fn::ImportValue': 'undefined:DomainName',
+                      'Fn::ImportValue': 'test-edu-domain:DomainName',
                     },
                   ],
                 ],
@@ -190,11 +202,31 @@ test('Test Stack', () => {
             PriceClass: 'PriceClass_100',
             ViewerCertificate: {
               AcmCertificateArn: {
-                'Fn::ImportValue': 'libraries-domain:ACMCertificateARN',
+                'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
               },
               SslSupportMethod: 'sni-only',
             },
           },
+        },
+      },
+      BeehiveCNAMEE7FBFA4E: {
+        Type: 'AWS::Route53::RecordSet',
+        Properties: {
+          Name: 'MyBeehiveStack-[object Object].test.edu.',
+          Type: 'CNAME',
+          Comment: 'MyBeehiveStack',
+          HostedZoneId: {
+            'Fn::ImportValue': 'MyFoundationStack:ExportsOutputRefHostedZoneDB99F8662BBAE844',
+          },
+          ResourceRecords: [
+            {
+              'Fn::GetAtt': [
+                'beehiveDistributionCFDistribution7C6BE6D1',
+                'DomainName',
+              ],
+            },
+          ],
+          TTL: '900',
         },
       },
     },

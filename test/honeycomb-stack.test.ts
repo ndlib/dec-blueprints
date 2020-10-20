@@ -6,10 +6,23 @@ import { HoneycombStack } from '../lib/honeycomb-stack'
 test('Empty Stack', () => {
   const app = new cdk.App()
   // WHEN
-  const domainStackName = 'libraries-domain'
-  const domainName = 'test.edu'
+  const env = {
+    name: 'test',
+    domainName: 'test.edu',
+    domainStackName: 'test-edu-domain',
+    region: 'test-region',
+    account: 'test-account',
+    createDns: true,
+    useVpcId: '123456',
+    slackNotifyStackName: 'slack-test',
+    createGithubWebhooks: false,
+    useExistingDnsZone: false,
+    notificationReceivers: 'test@test.edu',
+    alarmsEmail: 'test@test.edu',
+  }
+
   const useExistingDnsZone = false
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName, domainName, useExistingDnsZone })
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, useExistingDnsZone })
   const stack = new HoneycombStack(app, 'MyBeehiveStack', { foundationStack })
   // THEN
   expectCDK(stack).to(matchTemplate({
