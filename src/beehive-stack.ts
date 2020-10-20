@@ -68,8 +68,8 @@ export class BeehiveStack extends cdk.Stack {
     })
     // Create DNS record (conditionally)
     if (props.createDns) {
-      const record = new CnameRecord(this, 'BeehiveCNAME', { // I added this const to fix a linting error of "Do not use 'new' for side effects."
-        recordName: this.hostname,
+      new CnameRecord(this, 'BeehiveCNAME', { // eslint-disable-line no-new
+        recordName: this.hostname + `-${props.env}`,
         comment: this.hostname,
         domainName: this.cloudfront.distributionDomainName,
         zone: props.foundationStack.hostedZone,
