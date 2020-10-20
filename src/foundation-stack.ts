@@ -4,6 +4,7 @@ import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-c
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
 
 export interface FoundationStackProps extends cdk.StackProps {
+  readonly domainName: string;
   readonly domainStackName: string;
   readonly useExistingDnsZone: boolean;
 }
@@ -20,10 +21,10 @@ export class FoundationStack extends cdk.Stack {
 
     let certificateValidation = CertificateValidation.fromDns()
     if (props.useExistingDnsZone) {
-      this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: cdk.Fn.importValue(`${props.domainStackName}:DomainName`) })
+      this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.domainName })
     } else {
       this.hostedZone = new HostedZone(this, 'HostedZone', {
-        zoneName: cdk.Fn.importValue(`${props.domainStackName}:DomainName`),
+        zoneName: props.domainName,
       })
       certificateValidation = CertificateValidation.fromDns(this.hostedZone)
     }
