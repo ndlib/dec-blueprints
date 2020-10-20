@@ -11,7 +11,8 @@ describe('when useExistingDnsZone is true', () => {
   const stack = () => {
     const app = new cdk.App()
     return new FoundationStack(app, 'MyTestStack', {
-      domainStackName: 'test.edu',
+      domainStackName: 'test-edu=domain',
+      domainName: 'test.edu',
       useExistingDnsZone: true,
     })
   }

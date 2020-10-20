@@ -8,8 +8,9 @@ test('Test Stack', () => {
   const app = new cdk.App()
   // WHEN
   const domainStackName = 'libraries-domain'
+  const domainName = 'libraries.nd.edu'
   const useExistingDnsZone = false
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName, useExistingDnsZone })
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { domainStackName, domainName, useExistingDnsZone })
   const beehiveContext = getContextByNamespace('beehive')
 
   const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, ...beehiveContext })
@@ -98,7 +99,7 @@ test('Test Stack', () => {
           },
         },
       },
-      beehiveDistrobutionCFDistributionAA148562: {
+      beehiveDistributionCFDistribution7C6BE6D1: {
         Type: 'AWS::CloudFront::Distribution',
         Properties: {
           DistributionConfig: {
