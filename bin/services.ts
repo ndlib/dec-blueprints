@@ -12,16 +12,11 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   // Construct common props that are required by all service stacks
   const commonProps = {
     namespace,
-    useVpcId: env.useVpcId,
-    contextEnvName: env.name,
-    createDns: env.createDns,
-    domainStackName: env.domainStackName,
     env: env,
   }
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     useExistingDnsZone: env.useExistingDnsZone,
-    domainName: env.domainName,
     ...commonProps,
   })
 

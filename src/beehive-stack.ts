@@ -4,12 +4,11 @@ import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { Bucket } from '@aws-cdk/aws-s3'
 import { SharedServiceStackProps } from './shared-stack-props'
 import { FoundationStack } from './foundation-stack'
+import { CustomEnvironment } from './custom-environment'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
-  readonly contextEnvName: string,
-  readonly domainStackName: string,
   readonly hostnamePrefix: string,
-  readonly createDns: boolean,
+  readonly env: CustomEnvironment
   readonly foundationStack: FoundationStack
 }
 
@@ -32,7 +31,7 @@ export class BeehiveStack extends cdk.Stack {
     this.cloudfront = new CloudFrontWebDistribution(this, 'beehiveDistribution', {
       comment: this.hostname,
       aliasConfiguration: {
-        names: [this.hostname + '.' + cdk.Fn.importValue(`${props.domainStackName}:DomainName`)],
+        names: [this.hostname + '.' + cdk.Fn.importValue(`${props.env.domainStackName}:DomainName`)],
         acmCertRef: props.foundationStack.certificate.certificateArn,
       },
       originConfigs: [{
@@ -45,7 +44,7 @@ export class BeehiveStack extends cdk.Stack {
         behaviors: [{
           allowedMethods: CloudFrontAllowedMethods.GET_HEAD_OPTIONS,
           isDefaultBehavior: true,
-          defaultTtl: (props.env === 'dev') ? cdk.Duration.seconds(0) : cdk.Duration.days(1),
+          defaultTtl: (props.env.name === 'dev') ? cdk.Duration.seconds(0) : cdk.Duration.days(1),
         }],
       }],
       loggingConfig: {
@@ -67,7 +66,7 @@ export class BeehiveStack extends cdk.Stack {
       ],
     })
     // Create DNS record (conditionally)
-    if (props.createDns) {
+    if (props.env.createDns) {
       new CnameRecord(this, 'BeehiveCNAME', { // eslint-disable-line no-new
         recordName: this.hostname + `-${props.env}`,
         comment: this.hostname,

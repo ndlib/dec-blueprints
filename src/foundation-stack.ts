@@ -2,11 +2,13 @@ import * as cdk from '@aws-cdk/core'
 import { Bucket, BucketAccessControl } from '@aws-cdk/aws-s3'
 import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-certificatemanager'
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
+import { CustomEnvironment } from './custom-environment'
 
 export interface FoundationStackProps extends cdk.StackProps {
-  readonly domainName: string;
-  readonly domainStackName: string;
   readonly useExistingDnsZone: boolean;
+  // readonly domainName: string;
+  // readonly domainStackName: string;
+  readonly env: CustomEnvironment;
 }
 
 export class FoundationStack extends cdk.Stack {
@@ -21,10 +23,10 @@ export class FoundationStack extends cdk.Stack {
 
     let certificateValidation = CertificateValidation.fromDns()
     if (props.useExistingDnsZone) {
-      this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.domainName })
+      this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.env.domainName })
     } else {
       this.hostedZone = new HostedZone(this, 'HostedZone', {
-        zoneName: props.domainName,
+        zoneName: props.env.domainName,
       })
       certificateValidation = CertificateValidation.fromDns(this.hostedZone)
     }
@@ -40,6 +42,6 @@ export class FoundationStack extends cdk.Stack {
       }],
     })
     // Add shared certificate to use on ALBs, CloudFront Distributions
-    this.certificate = Certificate.fromCertificateArn(this, 'certificate', cdk.Fn.importValue(`${props.domainStackName}:ACMCertificateARN`))
+    this.certificate = Certificate.fromCertificateArn(this, 'certificate', cdk.Fn.importValue(`${props.env.domainStackName}:ACMCertificateARN`))
   }
 }
