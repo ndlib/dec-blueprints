@@ -5,6 +5,7 @@
       "region": "us-east-1",
       "useVpcId": "vpc-797fed1d",
       "createDns": true,
+      "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
@@ -15,6 +16,7 @@
       "region": "us-east-1",
       "useVpcId": "vpc-55c35e30",
       "createDns": false,
+      "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
@@ -32,9 +34,12 @@
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
   "infraSourceBranch": "main",
-
   "beehive:hostnamePrefix": "collections-dev",
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
-  "beehive:appSourceBranch": "master"
+  "beehive:appSourceBranch": "master",
+  "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
+    "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
+    "Name": "libraries.nd.edu."
+  }
 }
