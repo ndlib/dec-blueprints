@@ -26,7 +26,6 @@ describe('FoundationStack', () => {
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
         },
-        useExistingDnsZone: true,
       })
     }
 
@@ -77,7 +76,6 @@ describe('FoundationStack', () => {
     const stack = () => {
       const app = new cdk.App()
       return new FoundationStack(app, 'MyTestStack', {
-        useExistingDnsZone: false,
         env: {
           name: 'test',
           domainName: 'test.edu',
