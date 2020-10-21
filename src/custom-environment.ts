@@ -1,4 +1,4 @@
-import { ConstructNode, Environment, StackProps } from '@aws-cdk/core'
+import { ConstructNode, Environment } from '@aws-cdk/core'
 import { getRequiredContext } from './context-helpers'
 
 export class CustomEnvironment implements Environment {
@@ -25,6 +25,12 @@ export class CustomEnvironment implements Environment {
    * The base subdomain that should be used for all services
    */
   readonly domainName: string
+
+  /**
+   * The name of the domain stack that should be used to lookup an SSL Certificate
+   */
+
+   readonly domainStackName: string
 
   /**
    * If true, the app will find an existing zone by the domainName given.

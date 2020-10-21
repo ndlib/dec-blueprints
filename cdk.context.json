@@ -6,6 +6,7 @@
       "useVpcId": "vpc-797fed1d",
       "createDns": true,
       "domainName": "libraries.nd.edu",
+      "domainStackName": "libraries-domain",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -16,9 +17,9 @@
       "useVpcId": "vpc-55c35e30",
       "createDns": false,
       "domainName": "library.nd.edu",
+      "domainStackName": "library-domain",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "notificationReceivers": "hl-mellon-deployment-approvers-list@nd.edu",
       "createGithubWebhooks": true
     }
   },
@@ -31,6 +32,14 @@
   "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
-  "infraRepoName": "marble-blueprints",
-  "infraSourceBranch": "master"
+  "infraRepoName": "dec-blueprints",
+  "infraSourceBranch": "main",
+  "beehive:hostnamePrefix": "collections",
+  "beehive:appRepoOwner": "ndlib",
+  "beehive:appRepoName": "beehive",
+  "beehive:appSourceBranch": "master",
+  "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
+    "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
+    "Name": "libraries.nd.edu."
+  }
 }
