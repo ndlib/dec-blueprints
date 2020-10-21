@@ -22,7 +22,11 @@ export class BeehiveStack extends cdk.Stack {
 
     // The code that defines your stack goes here
 
-    this.hostname = `${props.hostnamePrefix || this.stackName}`
+    if (props.env.name === 'prod') {
+      this.hostname = `${props.hostnamePrefix || this.stackName}`
+    } else {
+      this.hostname = `${props.hostnamePrefix || this.stackName}` + `-${props.env.name}`
+    }
     const webBucket = new Bucket(this, 'beehiveBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: `s3/${this.hostname}`,
@@ -68,7 +72,7 @@ export class BeehiveStack extends cdk.Stack {
     // Create DNS record (conditionally)
     if (props.env.createDns) {
       new CnameRecord(this, 'BeehiveCNAME', { // eslint-disable-line no-new
-        recordName: this.hostname + `-${props.env}`,
+        recordName: this.hostname,
         comment: this.hostname,
         domainName: this.cloudfront.distributionDomainName,
         zone: props.foundationStack.hostedZone,
