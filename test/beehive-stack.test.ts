@@ -36,7 +36,7 @@ test('Test Stack', () => {
             DestinationBucketName: {
               'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0',
             },
-            LogFilePrefix: 's3/MyBeehiveStack',
+            LogFilePrefix: 's3/MyBeehiveStack-test',
           },
         },
         UpdateReplacePolicy: 'Retain',
@@ -120,7 +120,7 @@ test('Test Stack', () => {
                 'Fn::Join': [
                   '',
                   [
-                    'MyBeehiveStack.',
+                    'MyBeehiveStack-test.',
                     {
                       'Fn::ImportValue': 'test-edu-domain:DomainName',
                     },
@@ -128,7 +128,7 @@ test('Test Stack', () => {
                 ],
               },
             ],
-            Comment: 'MyBeehiveStack',
+            Comment: 'MyBeehiveStack-test',
             CustomErrorResponses: [
               {
                 ErrorCode: 404,
@@ -171,7 +171,7 @@ test('Test Stack', () => {
                 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA',
               },
               IncludeCookies: true,
-              Prefix: 'web/MyBeehiveStack',
+              Prefix: 'web/MyBeehiveStack-test',
             },
             Origins: [
               {
@@ -212,9 +212,9 @@ test('Test Stack', () => {
       BeehiveCNAMEE7FBFA4E: {
         Type: 'AWS::Route53::RecordSet',
         Properties: {
-          Name: 'MyBeehiveStack-[object Object].test.edu.',
+          Name: 'MyBeehiveStack-test.test.edu.',
           Type: 'CNAME',
-          Comment: 'MyBeehiveStack',
+          Comment: 'MyBeehiveStack-test',
           HostedZoneId: {
             'Fn::ImportValue': 'MyFoundationStack:ExportsOutputRefHostedZoneDB99F8662BBAE844',
           },
