@@ -5,9 +5,6 @@ import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
 import { CustomEnvironment } from './custom-environment'
 
 export interface FoundationStackProps extends cdk.StackProps {
-  readonly useExistingDnsZone: boolean;
-  // readonly domainName: string;
-  // readonly domainStackName: string;
   readonly env: CustomEnvironment;
 }
 
@@ -22,7 +19,7 @@ export class FoundationStack extends cdk.Stack {
     // The code that defines your stack goes here
 
     let certificateValidation = CertificateValidation.fromDns()
-    if (props.useExistingDnsZone) {
+    if (props.env.useExistingDnsZone) {
       this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.env.domainName })
     } else {
       this.hostedZone = new HostedZone(this, 'HostedZone', {

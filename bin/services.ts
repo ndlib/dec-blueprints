@@ -16,7 +16,6 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   }
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-    useExistingDnsZone: env.useExistingDnsZone,
     ...commonProps,
   })
 
