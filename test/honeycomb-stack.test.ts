@@ -21,8 +21,7 @@ test('Empty Stack', () => {
     alarmsEmail: 'test@test.edu',
   }
 
-  const useExistingDnsZone = false
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, useExistingDnsZone })
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
   const stack = new HoneycombStack(app, 'MyBeehiveStack', { foundationStack })
   // THEN
   expectCDK(stack).to(matchTemplate({
