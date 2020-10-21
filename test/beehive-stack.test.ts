@@ -1,234 +1,256 @@
-import { expect as expectCDK, MatchStyle, matchTemplate } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { BeehiveStack } from '../lib/beehive-stack'
 import { FoundationStack } from '../lib/foundation-stack'
 import { getContextByNamespace } from '../lib/context-helpers'
 
-test('Test Stack', () => {
-  const app = new cdk.App()
-  // WHEN
-  const env = {
-    name: 'test',
-    domainName: 'test.edu',
-    domainStackName: 'test-edu-domain',
-    region: 'test-region',
-    account: 'test-account',
-    createDns: true,
-    useVpcId: '123456',
-    slackNotifyStackName: 'slack-test',
-    createGithubWebhooks: false,
-    useExistingDnsZone: false,
-    notificationReceivers: 'test@test.edu',
-    alarmsEmail: 'test@test.edu',
+describe('non-production infrastructure', () => {
+  const stack = () => {
+    const app = new cdk.App()
+    const env = {
+      name: 'test',
+      domainName: 'test.edu',
+      domainStackName: 'test-edu-domain',
+      region: 'test-region',
+      account: 'test-account',
+      createDns: true,
+      useVpcId: '123456',
+      slackNotifyStackName: 'slack-test',
+      createGithubWebhooks: false,
+      useExistingDnsZone: false,
+      notificationReceivers: 'test@test.edu',
+      alarmsEmail: 'test@test.edu',
+    }
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const beehiveContext = getContextByNamespace('beehive')
+    return new BeehiveStack(app, 'MyTestStack', {
+      foundationStack,
+      env,
+      ...beehiveContext,
+    })
   }
-  const useExistingDnsZone = false
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, useExistingDnsZone })
-  const beehiveContext = getContextByNamespace('beehive')
 
-  const stack = new BeehiveStack(app, 'MyBeehiveStack', { foundationStack, env, ...beehiveContext })
-  // THEN
-  expectCDK(stack).to(matchTemplate({
-    Resources: {
-      beehiveBucket45D50636: {
-        Type: 'AWS::S3::Bucket',
-        Properties: {
-          LoggingConfiguration: {
-            DestinationBucketName: {
-              'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0',
-            },
-            LogFilePrefix: 's3/MyBeehiveStack-test',
-          },
-        },
-        UpdateReplacePolicy: 'Retain',
-        DeletionPolicy: 'Retain',
+  test('creates an S3 Bucket with logging', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
+      LoggingConfiguration: {
+        LogFilePrefix: 's3/MyTestStack-test',
+        DestinationBucketName: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0' },
       },
-      beehiveBucketPolicy7B5E0A2A: {
-        Type: 'AWS::S3::BucketPolicy',
-        Properties: {
-          Bucket: {
-            Ref: 'beehiveBucket45D50636',
-          },
-          PolicyDocument: {
-            Statement: [
+    }))
+  })
+
+  test('creates an Origin Access Identity for CloudFront', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::CloudFront::CloudFrontOriginAccessIdentity', {
+      CloudFrontOriginAccessIdentityConfig: {
+        Comment: {
+          'Fn::Join': [
+            '',
+            [
+              'Static Assets in ',
               {
-                Action: [
-                  's3:GetObject*',
-                  's3:GetBucket*',
-                  's3:List*',
-                ],
-                Effect: 'Allow',
-                Principal: {
-                  CanonicalUser: {
-                    'Fn::GetAtt': [
-                      'beehiveOAI4A084BEC',
-                      'S3CanonicalUserId',
-                    ],
-                  },
-                },
-                Resource: [
-                  {
-                    'Fn::GetAtt': [
-                      'beehiveBucket45D50636',
-                      'Arn',
-                    ],
-                  },
-                  {
-                    'Fn::Join': [
-                      '',
-                      [
-                        {
-                          'Fn::GetAtt': [
-                            'beehiveBucket45D50636',
-                            'Arn',
-                          ],
-                        },
-                        '/*',
-                      ],
-                    ],
-                  },
-                ],
+                Ref: 'beehiveBucket45D50636',
               },
             ],
-            Version: '2012-10-17',
-          },
+          ],
         },
       },
-      beehiveOAI4A084BEC: {
-        Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity',
-        Properties: {
-          CloudFrontOriginAccessIdentityConfig: {
-            Comment: {
-              'Fn::Join': [
-                '',
-                [
-                  'Static Assets in ',
-                  {
-                    Ref: 'beehiveBucket45D50636',
-                  },
-                ],
+    }))
+  })
+
+  test('creates a CloudFront distribution with proper alias', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Aliases: [
+          {
+            'Fn::Join': [
+              '',
+              [
+                'MyTestStack-test.',
+                {
+                  'Fn::ImportValue': 'test-edu-domain:DomainName',
+                },
               ],
-            },
+            ],
           },
-        },
+        ],
       },
-      beehiveDistributionCFDistribution7C6BE6D1: {
-        Type: 'AWS::CloudFront::Distribution',
-        Properties: {
-          DistributionConfig: {
-            Aliases: [
-              {
+    }))
+  })
+
+  test('creates CloudFront with proper OriginConfig', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Origins: [
+          {
+            S3OriginConfig: {
+              OriginAccessIdentity: {
                 'Fn::Join': [
                   '',
                   [
-                    'MyBeehiveStack-test.',
+                    'origin-access-identity/cloudfront/',
                     {
-                      'Fn::ImportValue': 'test-edu-domain:DomainName',
+                      Ref: 'beehiveOAI4A084BEC',
                     },
                   ],
                 ],
               },
-            ],
-            Comment: 'MyBeehiveStack-test',
-            CustomErrorResponses: [
-              {
-                ErrorCode: 404,
-                ResponseCode: 200,
-                ResponsePagePath: '/',
-              },
-              {
-                ErrorCode: 403,
-                ResponseCode: 200,
-                ResponsePagePath: '/',
-              },
-            ],
-            DefaultCacheBehavior: {
-              AllowedMethods: [
-                'GET',
-                'HEAD',
-                'OPTIONS',
-              ],
-              CachedMethods: [
-                'GET',
-                'HEAD',
-              ],
-              Compress: true,
-              DefaultTTL: 86400,
-              ForwardedValues: {
-                Cookies: {
-                  Forward: 'none',
-                },
-                QueryString: false,
-              },
-              TargetOriginId: 'origin1',
-              ViewerProtocolPolicy: 'redirect-to-https',
-            },
-            DefaultRootObject: 'index.html',
-            Enabled: true,
-            HttpVersion: 'http2',
-            IPV6Enabled: true,
-            Logging: {
-              Bucket: {
-                'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA',
-              },
-              IncludeCookies: true,
-              Prefix: 'web/MyBeehiveStack-test',
-            },
-            Origins: [
-              {
-                ConnectionAttempts: 3,
-                ConnectionTimeout: 10,
-                DomainName: {
-                  'Fn::GetAtt': [
-                    'beehiveBucket45D50636',
-                    'RegionalDomainName',
-                  ],
-                },
-                Id: 'origin1',
-                S3OriginConfig: {
-                  OriginAccessIdentity: {
-                    'Fn::Join': [
-                      '',
-                      [
-                        'origin-access-identity/cloudfront/',
-                        {
-                          Ref: 'beehiveOAI4A084BEC',
-                        },
-                      ],
-                    ],
-                  },
-                },
-              },
-            ],
-            PriceClass: 'PriceClass_100',
-            ViewerCertificate: {
-              AcmCertificateArn: {
-                'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
-              },
-              SslSupportMethod: 'sni-only',
             },
           },
+        ],
+      },
+    }))
+  })
+
+  test('CloudFront distribution gets proper ACM certificate', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        ViewerCertificate: {
+          AcmCertificateArn: {
+            'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
+          },
+          SslSupportMethod: 'sni-only',
         },
       },
-      BeehiveCNAMEE7FBFA4E: {
-        Type: 'AWS::Route53::RecordSet',
-        Properties: {
-          Name: 'MyBeehiveStack-test.test.edu.',
-          Type: 'CNAME',
-          Comment: 'MyBeehiveStack-test',
-          HostedZoneId: {
-            'Fn::ImportValue': 'MyFoundationStack:ExportsOutputRefHostedZoneDB99F8662BBAE844',
-          },
-          ResourceRecords: [
-            {
-              'Fn::GetAtt': [
-                'beehiveDistributionCFDistribution7C6BE6D1',
-                'DomainName',
-              ],
-            },
+    }))
+  })
+
+  test('CloudFront distribution has propper logging configuration', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Logging: {
+          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA' },
+          IncludeCookies: true,
+          Prefix: 'web/MyTestStack-test',
+        },
+      },
+    }))
+  })
+
+  test('create DNS record in Route53', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::Route53::RecordSet', {
+      Name: 'MyTestStack-test.test.edu.',
+      Type: 'CNAME',
+      Comment: 'MyTestStack-test',
+      HostedZoneId: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputRefHostedZoneDB99F8662BBAE844' },
+      ResourceRecords: [
+        {
+          'Fn::GetAtt': [
+            'beehiveDistributionCFDistribution7C6BE6D1',
+            'DomainName',
           ],
-          TTL: '900',
+        },
+      ],
+      TTL: '900',
+    }))
+  })
+})
+
+describe('production infrastructure', () => {
+  const stack = () => {
+    const app = new cdk.App()
+    const env = {
+      name: 'prod',
+      domainName: 'test.edu',
+      domainStackName: 'test-edu-domain',
+      region: 'test-region',
+      account: 'test-account',
+      createDns: true,
+      useVpcId: '123456',
+      slackNotifyStackName: 'slack-test',
+      createGithubWebhooks: false,
+      useExistingDnsZone: true,
+      notificationReceivers: 'test@test.edu',
+      alarmsEmail: 'test@test.edu',
+    }
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const beehiveContext = getContextByNamespace('beehive')
+    return new BeehiveStack(app, 'MyTestStack', {
+      foundationStack,
+      env,
+      ...beehiveContext,
+    })
+  }
+
+  test('creates an S3 Bucket with logging', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
+      LoggingConfiguration: {
+        LogFilePrefix: 's3/MyTestStack',
+        DestinationBucketName: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0' },
+      },
+    }))
+  })
+
+  test('creates a CloudFront distribution with proper alias', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Aliases: [
+          {
+            'Fn::Join': [
+              '',
+              [
+                'MyTestStack.',
+                {
+                  'Fn::ImportValue': 'test-edu-domain:DomainName',
+                },
+              ],
+            ],
+          },
+        ],
+      },
+    }))
+  })
+
+  test('CloudFront distribution has propper logging configuration', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        Logging: {
+          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA' },
+          IncludeCookies: true,
+          Prefix: 'web/MyTestStack',
         },
       },
-    },
-  }, MatchStyle.EXACT))
+    }))
+  })
+})
+
+describe('do not create dns', () => {
+  const stack = () => {
+    const app = new cdk.App()
+    const env = {
+      name: 'test',
+      domainName: 'test.edu',
+      domainStackName: 'test-edu-domain',
+      region: 'test-region',
+      account: 'test-account',
+      createDns: false,
+      useVpcId: '123456',
+      slackNotifyStackName: 'slack-test',
+      createGithubWebhooks: false,
+      useExistingDnsZone: true,
+      notificationReceivers: 'test@test.edu',
+      alarmsEmail: 'test@test.edu',
+    }
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const beehiveContext = getContextByNamespace('beehive')
+    return new BeehiveStack(app, 'MyTestStack', {
+      foundationStack,
+      env,
+      ...beehiveContext,
+    })
+  }
+
+  test('does not create a DNS record', () => {
+    const newStack = stack()
+    expectCDK(newStack).notTo(haveResource('AWS::Route53::RecordSet'))
+  })
 })
