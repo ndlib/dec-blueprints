@@ -30,7 +30,13 @@ export class CustomEnvironment implements Environment {
    * The name of the domain stack that should be used to lookup an SSL Certificate
    */
 
-   readonly domainStackName: string
+  readonly domainStackName: string
+
+  /**
+   * The name of the network stack that has exports for the current VPCID and SubnetIDs
+   */
+
+  readonly networkStackName: string
 
   /**
    * If true, the app will find an existing zone by the domainName given.

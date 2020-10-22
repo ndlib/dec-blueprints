@@ -1,29 +1,38 @@
-import { expect as expectCDK, MatchStyle, matchTemplate } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../lib/foundation-stack'
 import { HoneypotStack } from '../lib/honeypot-stack'
+import { FoundationStack } from '../lib/foundation-stack'
+import { getContextByNamespace } from '../lib/context-helpers'
 
-test('Empty Stack', () => {
-  const app = new cdk.App()
-  // WHEN
-  const env = {
-    name: 'test',
-    domainName: 'test.edu',
-    domainStackName: 'test-edu-domain',
-    region: 'test-region',
-    account: 'test-account',
-    createDns: true,
-    useVpcId: '123456',
-    slackNotifyStackName: 'slack-test',
-    createGithubWebhooks: false,
-    useExistingDnsZone: false,
-    notificationReceivers: 'test@test.edu',
-    alarmsEmail: 'test@test.edu',
+describe('do not create dns', () => {
+  const stack = () => {
+    const app = new cdk.App()
+    const env = {
+      name: 'test',
+      domainName: 'test.edu',
+      domainStackName: 'test-edu-domain',
+      networkStackName: 'test-network',
+      region: 'test-region',
+      account: 'test-account',
+      createDns: false,
+      useVpcId: '123456',
+      slackNotifyStackName: 'slack-test',
+      createGithubWebhooks: false,
+      useExistingDnsZone: true,
+      notificationReceivers: 'test@test.edu',
+      alarmsEmail: 'test@test.edu',
+    }
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const honeypotContext = getContextByNamespace('honeypot')
+    return new HoneypotStack(app, 'MyTestStack', {
+      foundationStack,
+      env,
+      ...honeypotContext,
+    })
   }
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
-  const stack = new HoneypotStack(app, 'MyBeehiveStack', { foundationStack })
-  // THEN
-  expectCDK(stack).to(matchTemplate({
-    Resources: {},
-  }, MatchStyle.EXACT))
+
+  test('does not create a DNS record', () => {
+    const newStack = stack()
+    expectCDK(newStack).notTo(haveResource('AWS::Route53::RecordSet'))
+  })
 })
