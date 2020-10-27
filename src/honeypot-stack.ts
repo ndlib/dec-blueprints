@@ -9,6 +9,7 @@ import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { SubnetType, Vpc } from '@aws-cdk/aws-ec2'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import ecs = require('@aws-cdk/aws-ecs')
+import ssm = require('@aws-cdk/aws-ssm')
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
@@ -57,6 +58,15 @@ export class HoneypotStack extends cdk.Stack {
       internetFacing: false,
     })
 
+    const secretsHelper = (task: string, key: string) => {
+      const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}` , {
+        parameterName: `/all/${this.hostname}/${key}`,
+        version: 1, // This doesn't seem to matter in the context of ECS task definitions
+      });
+      return ecs.Secret.fromSsmParameter(parameter);
+    }
+
+
     // ECS Service
     const cluster = new ecs.Cluster(this, 'FargateCluster', { vpc })
 
@@ -86,6 +96,9 @@ export class HoneypotStack extends cdk.Stack {
       command: ['bash', '/usr/bin/docker-entrypoint.sh'],
       essential: true,
       logging,
+      secrets: {
+        SECRET_KEY_BASE: secretsHelper('HoneypotService', 'secret_key_base'),
+      },
     })
     container.addPortMappings({
       containerPort: 3019,
