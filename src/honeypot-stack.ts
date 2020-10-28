@@ -98,6 +98,10 @@ export class HoneypotStack extends cdk.Stack {
       secrets: {
         SECRET_KEY_BASE: secretsHelper('HoneypotService', 'secret_key_base'),
       },
+      environment: {
+        RAILS_RUN_ENV: 'development',
+      },   
+
     })
     container.addPortMappings({
       containerPort: 3019,
