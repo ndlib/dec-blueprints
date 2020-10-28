@@ -59,13 +59,12 @@ export class HoneypotStack extends cdk.Stack {
     })
 
     const secretsHelper = (task: string, key: string) => {
-      const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}` , {
+      const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
         parameterName: `/all/${this.hostname}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
-      });
-      return ecs.Secret.fromSsmParameter(parameter);
+      })
+      return ecs.Secret.fromSsmParameter(parameter)
     }
-
 
     // ECS Service
     const cluster = new ecs.Cluster(this, 'FargateCluster', { vpc })

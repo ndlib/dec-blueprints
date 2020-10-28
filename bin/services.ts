@@ -30,7 +30,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, { foundationStack, ...commonProps })
 
   const honeypotContext = getContextByNamespace('honeypot')
-  const honeypotStack = new HoneypotStack(app, `${namespace}-honeypot`, { 
+  const honeypotStack = new HoneypotStack(app, `${namespace}-honeypot`, {
     foundationStack,
     ...commonProps,
     ...honeypotContext,
