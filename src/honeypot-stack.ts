@@ -120,7 +120,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       healthCheck: {
-        path: '/favicon.ico',
+        path: '/health',
         protocol: elbv2.Protocol.HTTP,
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(10),
