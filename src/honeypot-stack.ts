@@ -100,7 +100,7 @@ export class HoneypotStack extends cdk.Stack {
       },
       environment: {
         RAILS_RUN_ENV: 'production',
-      },   
+      },
 
     })
     container.addPortMappings({
