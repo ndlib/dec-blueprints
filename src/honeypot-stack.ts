@@ -99,7 +99,7 @@ export class HoneypotStack extends cdk.Stack {
         SECRET_KEY_BASE: secretsHelper('HoneypotService', 'secret_key_base'),
       },
       environment: {
-        RAILS_RUN_ENV: 'production',
+        RAILS_RUN_ENV: 'development',
       },
 
     })
