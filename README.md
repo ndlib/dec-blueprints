@@ -33,7 +33,7 @@ npm run format
 ## How to deploy
 
 TODO: [ESU-1475] Fill in more details once we get further into the project
-#### Some stacks require secrets that get pulled from parameter store. If they secrets do not exist then you can create them (replace <value> with the actual value) by running the following command(s):
+Some stacks require secrets that get pulled from parameter store. If they secrets do not exist then you can create them (replace <value> with the actual value) by running the following command(s):
 ```console
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/honeypot/secret_key_base" --value '<value>'
 ```
