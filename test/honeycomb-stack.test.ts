@@ -10,6 +10,7 @@ test('Empty Stack', () => {
     name: 'test',
     domainName: 'test.edu',
     domainStackName: 'test-edu-domain',
+    networkStackName: 'test-network',
     region: 'test-region',
     account: 'test-account',
     createDns: true,
