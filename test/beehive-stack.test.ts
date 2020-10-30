@@ -159,6 +159,7 @@ describe('production infrastructure', () => {
       name: 'prod',
       domainName: 'test.edu',
       domainStackName: 'test-edu-domain',
+      networkStackName: 'test-network',
       region: 'test-region',
       account: 'test-account',
       createDns: true,
