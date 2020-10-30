@@ -35,6 +35,7 @@ Some stacks require secrets that get pulled from parameter store. If secrets do 
 
 ```sh
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/honeypot/secret_key_base" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'String' --name "/all/honeypot/rails_run_env" --value 'production'
 ```
 
 ## How to deploy
