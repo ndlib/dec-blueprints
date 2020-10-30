@@ -31,7 +31,7 @@ npm run format
 ```
 ## AWS prerequisites
 
-Some stacks require secrets that get pulled from parameter store. If secrets do not exist then you can create them (replace <value> with the actual value) by running the following:
+Some stacks require secrets that get pulled from parameter store. If secrets do not exist then you can create them (replace `<value>` with the actual value) by running the following:
 
 ```console
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/honeypot/secret_key_base" --value '<value>'
