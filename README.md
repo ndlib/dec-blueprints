@@ -33,7 +33,10 @@ npm run format
 ## How to deploy
 
 TODO: [ESU-1475] Fill in more details once we get further into the project
-
+### Create secrets in AWS if they do not exist
+```console
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/honeypot/secret_key_base" --value '<value>'
+```
 ```sh
 cdk deploy <stackname>
 ```
