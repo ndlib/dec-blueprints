@@ -33,7 +33,7 @@ npm run format
 
 Some stacks require secrets that get pulled from parameter store. If secrets do not exist then you can create them (replace `<value>` with the actual secret) by running the following:
 
-```console
+```sh
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/honeypot/secret_key_base" --value '<value>'
 ```
 
