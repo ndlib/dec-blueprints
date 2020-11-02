@@ -14,7 +14,6 @@ test('Empty Stack', () => {
     region: 'test-region',
     account: 'test-account',
     createDns: true,
-    useVpcId: '123456',
     slackNotifyStackName: 'slack-test',
     createGithubWebhooks: false,
     useExistingDnsZone: false,

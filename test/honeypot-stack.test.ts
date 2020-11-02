@@ -15,7 +15,6 @@ describe('do not create dns', () => {
       region: 'test-region',
       account: 'test-account',
       createDns: false,
-      useVpcId: '123456',
       slackNotifyStackName: 'slack-test',
       createGithubWebhooks: false,
       useExistingDnsZone: true,

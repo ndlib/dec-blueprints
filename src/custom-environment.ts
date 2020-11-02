@@ -11,11 +11,6 @@ export class CustomEnvironment implements Environment {
   readonly name: string
 
   /**
-   * The VPC ID to use in the foundation stack
-   */
-  readonly useVpcId: string
-
-  /**
    * If true, service stacks will create Route53 recordsets
    * for their services
    */
