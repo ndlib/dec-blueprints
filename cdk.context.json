@@ -7,7 +7,7 @@
       "createDns": true,
       "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
-      "networkStackName": "peered-network",
+      "networkStackName": "unpeered-network",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -19,7 +19,7 @@
       "createDns": false,
       "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
-      "networkStackName": "peered-network",
+      "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "createGithubWebhooks": true
