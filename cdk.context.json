@@ -3,7 +3,7 @@
     "dev": {
       "account": "333680067100",
       "region": "us-east-1",
-      "useVpcId": "vpc-797fed1d",
+      "useVpcId": "vpc-023ee50957a10352d",
       "createDns": true,
       "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
@@ -15,7 +15,7 @@
     "prod": {
       "account": "230391840102",
       "region": "us-east-1",
-      "useVpcId": "vpc-55c35e30",
+      "useVpcId": "vpc-0ade8b4d274ae40dd",
       "createDns": false,
       "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
