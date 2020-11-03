@@ -148,14 +148,14 @@ export class HoneypotStack extends cdk.Stack {
     const elbv2Applistener = new elbv2.ApplicationListenerRule(this, 'ECSServiceRule2', {
       targetGroups: [targetGroup],
       pathPattern: '*',
-      hostHeader: `${props.hostnamePrefix}.${domainNameImport}`,
+      hostHeader: `${this.hostname}.${domainNameImport}`,
       listener: alb.defaultListener,
       priority: 1,
     })
 
     if (props.env.createDns) {
       const cnameRecord = new CnameRecord(this, 'ServiceCNAME', {
-        recordName: props.hostnamePrefix,
+        recordName: this.hostname,
         domainName: alb.loadBalancerDnsName,
         zone: HostedZone.fromHostedZoneAttributes(this, 'ImportedHostedZone', {
           hostedZoneId: cdk.Fn.importValue(`${props.env.domainStackName}:Zone`),
