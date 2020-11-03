@@ -23,7 +23,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: ndlib/honeypot
-        path: ../honeypot
+        path: honeypot
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:
