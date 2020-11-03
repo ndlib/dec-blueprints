@@ -94,7 +94,7 @@ export class HoneypotStack extends cdk.Stack {
 
     // Add Container
     const containerImage = new DockerImageAsset(this, 'DockerImageAsset', {
-      directory: 'honeypot',
+      directory: '../honeypot',
       file: 'docker/Dockerfile',
     })
 
