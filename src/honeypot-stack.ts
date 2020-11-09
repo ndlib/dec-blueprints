@@ -23,11 +23,6 @@ export class HoneypotStack extends cdk.Stack {
     super(scope, id, props)
 
     // The code that defines your stack goes here
-    if (props.env.name === 'prod') {
-      this.hostname = `${props.hostnamePrefix || this.stackName}`
-    } else {
-      this.hostname = `${props.hostnamePrefix || this.stackName}` + `-${props.env.name}`
-    }
 
     // Networking
     const vpcId = cdk.Fn.importValue(`${props.env.networkStackName}:VPCID`)
@@ -60,7 +55,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const secretsHelper = (task: string, key: string) => {
       const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
-        parameterName: `/all/${this.hostname}/${key}`,
+        parameterName: `/all/${props.hostnamePrefix}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
       })
       return ecs.Secret.fromSsmParameter(parameter)
@@ -68,7 +63,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const stringHelper = (task: string, key: string) => {
       const parameter = ssm.StringParameter.fromStringParameterAttributes(this, `${task}${key}`, {
-        parameterName: `/all/${this.hostname}/${key}`,
+        parameterName: `/all/${props.hostnamePrefix}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
       })
       return parameter.stringValue
@@ -79,7 +74,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const appTask = new ecs.TaskDefinition(this, 'AppTaskDefinition', {
       compatibility: ecs.Compatibility.FARGATE,
-      family: `${this.hostname}-Service`,
+      family: `${this.stackName}-Service`,
       cpu: '2048',
       memoryMiB: '4096',
       networkMode: ecs.NetworkMode.AWS_VPC,
@@ -89,7 +84,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const logging = ecs.AwsLogDriver.awsLogs({
       logGroup: logs,
-      streamPrefix: `${this.hostname}-Task`,
+      streamPrefix: `${this.stackName}-Task`,
     })
 
     // Add Container
@@ -148,14 +143,14 @@ export class HoneypotStack extends cdk.Stack {
     const elbv2Applistener = new elbv2.ApplicationListenerRule(this, 'ECSServiceRule2', {
       targetGroups: [targetGroup],
       pathPattern: '*',
-      hostHeader: `${this.hostname}.${domainNameImport}`,
+      hostHeader: `${props.hostnamePrefix}.${domainNameImport}`,
       listener: alb.defaultListener,
       priority: 1,
     })
 
     if (props.env.createDns) {
       const cnameRecord = new CnameRecord(this, 'ServiceCNAME', {
-        recordName: this.hostname,
+        recordName: props.hostnamePrefix,
         domainName: alb.loadBalancerDnsName,
         zone: HostedZone.fromHostedZoneAttributes(this, 'ImportedHostedZone', {
           hostedZoneId: cdk.Fn.importValue(`${props.env.domainStackName}:Zone`),
