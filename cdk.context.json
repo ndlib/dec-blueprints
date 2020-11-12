@@ -42,6 +42,12 @@
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
   "honeypot:appSourceBranch": "master",
+  "honeypot:appDirectory": "../honeypot",
+  "honeycomb:hostnamePrefix": "honeycomb",
+  "honeycomb:appRepoOwner": "ndlib",
+  "honeycomb:appRepoName": "honeycomb",
+  "honeycomb:appSourceBranch": "master",
+  "honeycomb:appDirectory": "../honeycomb",
   "buzz:hostnamePrefix": "buzz",
   "buzz:appRepoOwner": "ndlib",
   "buzz:appRepoName": "buzz",
@@ -51,5 +57,8 @@
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
   },
-  "ssm:account=230391840102:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-05593041929017eb2"
+  "ssm:account=333680067100:parameterName=/all/jg-honeycomb/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
+  "ssm:account=333680067100:parameterName=/all/jg-dec-honeycomb/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
+  "ssm:account=230391840102:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-05593041929017eb2",
+  "ssm:account=333680067100:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71"
 }

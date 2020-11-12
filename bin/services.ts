@@ -3,7 +3,7 @@ import { BeehiveStack } from '../lib/beehive-stack'
 import { BuzzStack } from '../lib/buzz-stack'
 import { CustomEnvironment } from '../lib/custom-environment'
 import { FoundationStack } from '../lib/foundation-stack'
-import { HoneycombStack } from '../lib/honeycomb-stack'
+import { HoneycombStack } from '../lib/honeycomb/honeycomb-stack'
 import { HoneypotStack } from '../lib/honeypot-stack'
 import { Stacks } from '../lib/types'
 import { getContextByNamespace } from '../lib/context-helpers'
@@ -25,14 +25,19 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...beehiveContext,
   })
 
+  const honeycombContext = getContextByNamespace('honeycomb')
+  const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, {
+    foundationStack,
+    ...commonProps,
+    ...honeycombContext,
+  })
+
   const buzzContext = getContextByNamespace('buzz')
   const buzzStack = new BuzzStack(app, `${namespace}-buzz`, {
     foundationStack,
     ...commonProps,
     ...buzzContext,
   })
-
-  const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, { foundationStack, ...commonProps })
 
   const honeypotContext = getContextByNamespace('honeypot')
   const honeypotStack = new HoneypotStack(app, `${namespace}-honeypot`, {
