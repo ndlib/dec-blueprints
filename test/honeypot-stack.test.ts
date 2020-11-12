@@ -21,7 +21,8 @@ describe('Production stack infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const networkStackName = 'test-network'
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
@@ -29,8 +30,6 @@ describe('Production stack infrastructure', () => {
       ...honeypotContext,
     })
   }
-<<<<<<< HEAD
-<<<<<<< HEAD
 
   test('does not creates a DNS record', () => {
     const newStack = stack()
@@ -55,7 +54,8 @@ describe('Dev stack infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const networkStackName = 'test-network'
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
@@ -68,15 +68,4 @@ describe('Dev stack infrastructure', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResource('AWS::Route53::RecordSet'))
   })
-=======
-=======
->>>>>>> da726393867f0690273e63713a2b8cabd6adbba9
-  const networkStackName = 'network'
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
-  const stack = new HoneypotStack(app, 'MyBeehiveStack', { foundationStack })
-  // THEN
-  expectCDK(stack).to(matchTemplate({
-    Resources: {},
-  }, MatchStyle.EXACT))
->>>>>>> da726393867f0690273e63713a2b8cabd6adbba9
 })
