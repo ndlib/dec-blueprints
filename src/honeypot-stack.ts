@@ -55,7 +55,7 @@ export class HoneypotStack extends cdk.Stack {
 
     const secretsHelper = (task: string, key: string) => {
       const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
-        parameterName: `/all/${props.hostnamePrefix}/${key}`,
+        parameterName: `/all/${this.stackName}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
       })
       return ecs.Secret.fromSsmParameter(parameter)
