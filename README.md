@@ -29,6 +29,13 @@ If there are many style issues, you may want to just let the linter fix them for
 ```sh
 npm run format
 ```
+## AWS prerequisites
+
+Some stacks require secrets that get pulled from parameter store. If secrets do not exist then you can create them (replace `<value>` with the actual secret) by running the following:
+
+```sh
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/dec-honeypot/secret_key_base" --description "Secret key base for verifying signed cookies" --value '<value>'
+```
 
 ## How to deploy
 

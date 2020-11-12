@@ -3,10 +3,10 @@
     "dev": {
       "account": "333680067100",
       "region": "us-east-1",
-      "useVpcId": "vpc-797fed1d",
       "createDns": true,
       "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
+      "networkStackName": "unpeered-network",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -14,10 +14,10 @@
     "prod": {
       "account": "230391840102",
       "region": "us-east-1",
-      "useVpcId": "vpc-55c35e30",
       "createDns": false,
       "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
+      "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "createGithubWebhooks": true
@@ -38,6 +38,10 @@
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
   "beehive:appSourceBranch": "master",
+  "honeypot:hostnamePrefix": "honeypot",
+  "honeypot:appRepoOwner": "ndlib",
+  "honeypot:appRepoName": "honeypot",
+  "honeypot:appSourceBranch": "master",
   "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
