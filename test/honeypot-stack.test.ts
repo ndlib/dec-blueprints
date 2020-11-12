@@ -30,6 +30,7 @@ describe('Production stack infrastructure', () => {
     })
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 
   test('does not creates a DNS record', () => {
     const newStack = stack()
@@ -68,6 +69,8 @@ describe('Dev stack infrastructure', () => {
     expectCDK(newStack).to(haveResource('AWS::Route53::RecordSet'))
   })
 =======
+=======
+>>>>>>> da726393867f0690273e63713a2b8cabd6adbba9
   const networkStackName = 'network'
   const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
   const stack = new HoneypotStack(app, 'MyBeehiveStack', { foundationStack })
