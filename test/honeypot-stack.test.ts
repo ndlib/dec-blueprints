@@ -20,7 +20,8 @@ test('Empty Stack', () => {
     notificationReceivers: 'test@test.edu',
     alarmsEmail: 'test@test.edu',
   }
-  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+  const networkStackName = 'network'
+  const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
   const stack = new HoneypotStack(app, 'MyBeehiveStack', { foundationStack })
   // THEN
   expectCDK(stack).to(matchTemplate({
