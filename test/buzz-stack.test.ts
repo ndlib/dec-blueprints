@@ -23,7 +23,7 @@ describe('non-production infrastructure', () => {
       alarmsEmail: 'test@test.edu',
     }
     const networkStackName = 'network'
-    const hostnamePrefix = 'buzz'
+    const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
     return new BuzzStack(app, 'MyBuzzStack', {
