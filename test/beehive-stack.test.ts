@@ -21,8 +21,7 @@ describe('non-production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const networkStackName = 'network'
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
@@ -170,8 +169,7 @@ describe('production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const networkStackName = 'network'
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
@@ -242,8 +240,7 @@ describe('do not create dns', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const networkStackName = 'network'
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,

@@ -26,7 +26,6 @@ describe('FoundationStack', () => {
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
         },
-        networkStackName: 'network',
       })
     }
 
@@ -91,7 +90,6 @@ describe('FoundationStack', () => {
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
         },
-        networkStackName: 'network',
       })
     }
 
