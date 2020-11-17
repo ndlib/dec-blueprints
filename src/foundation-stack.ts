@@ -7,7 +7,6 @@ import { CustomEnvironment } from './custom-environment'
 
 export interface FoundationStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
-  readonly networkStackName: string
 }
 
 export class FoundationStack extends cdk.Stack {
@@ -23,7 +22,7 @@ export class FoundationStack extends cdk.Stack {
 
     // #region Create a VPC prop that can be used by other stacks
 
-    const vpcId = cdk.Fn.importValue(`${props.networkStackName}:VPCID`)
+    const vpcId = cdk.Fn.importValue(`${props.env.networkStackName}:VPCID`)
 
     this.vpc = Vpc.fromVpcAttributes(this, 'unpeered-network', {
       vpcId: vpcId,
@@ -32,12 +31,12 @@ export class FoundationStack extends cdk.Stack {
         cdk.Fn.select(1, cdk.Fn.getAzs()),
       ],
       publicSubnetIds: [
-        cdk.Fn.importValue(`${props.networkStackName}:PublicSubnet1ID`),
-        cdk.Fn.importValue(`${props.networkStackName}:PublicSubnet2ID`),
+        cdk.Fn.importValue(`${props.env.networkStackName}:PublicSubnet1ID`),
+        cdk.Fn.importValue(`${props.env.networkStackName}:PublicSubnet2ID`),
       ],
       privateSubnetIds: [
-        cdk.Fn.importValue(`${props.networkStackName}:PrivateSubnet1ID`),
-        cdk.Fn.importValue(`${props.networkStackName}:PrivateSubnet2ID`),
+        cdk.Fn.importValue(`${props.env.networkStackName}:PrivateSubnet1ID`),
+        cdk.Fn.importValue(`${props.env.networkStackName}:PrivateSubnet2ID`),
       ],
     })
     // #endregion
