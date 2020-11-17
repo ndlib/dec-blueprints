@@ -33,7 +33,7 @@ export class BuzzStack extends cdk.Stack {
       certificateArns: [props.foundationStack.certificate.certificateArn],
     })
 
-    const databaseConnectSecurityGroupParam = StringParameter.valueFromLookup(this, `/all/buzz/sg_database_connect`)
+    const databaseConnectSecurityGroupParam = StringParameter.valueFromLookup(this, '/all/buzz/sg_database_connect')
     const connectSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSqlSG', databaseConnectSecurityGroupParam)
     const appSecurityGroup = new SecurityGroup(this, 'AppSecurityGroup', {
       vpc: props.foundationStack.vpc,
