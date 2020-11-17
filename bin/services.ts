@@ -14,7 +14,6 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     namespace,
     env: env,
   }
-
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     ...commonProps,
   })
@@ -26,7 +25,13 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...beehiveContext,
   })
 
-  const buzzStack = new BuzzStack(app, `${namespace}-buzz`, { foundationStack, ...commonProps })
+  const buzzContext = getContextByNamespace('buzz')
+  const buzzStack = new BuzzStack(app, `${namespace}-buzz`, {
+    foundationStack,
+    ...commonProps,
+    ...buzzContext,
+  })
+
   const honeycombStack = new HoneycombStack(app, `${namespace}-honeycomb`, { foundationStack, ...commonProps })
 
   const honeypotContext = getContextByNamespace('honeypot')

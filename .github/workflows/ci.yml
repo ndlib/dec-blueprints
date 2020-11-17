@@ -21,6 +21,11 @@ jobs:
       with:
         repository: ndlib/honeypot
         path: honeypot
+    - name: Checkout Buzz repo
+      uses: actions/checkout@v2
+      with:
+        repository: ndlib/buzz
+        path: buzz
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v1
       with:

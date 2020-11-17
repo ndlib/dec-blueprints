@@ -42,8 +42,14 @@
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
   "honeypot:appSourceBranch": "master",
+  "buzz:hostnamePrefix": "buzz",
+  "buzz:appRepoOwner": "ndlib",
+  "buzz:appRepoName": "buzz",
+  "buzz:appSourceBranch": "master",
+  "buzz:appDirectory": "../buzz",
   "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
-  }
+  },
+  "ssm:account=230391840102:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-05593041929017eb2"
 }

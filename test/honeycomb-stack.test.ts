@@ -20,7 +20,6 @@ test('Empty Stack', () => {
     notificationReceivers: 'test@test.edu',
     alarmsEmail: 'test@test.edu',
   }
-
   const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
   const stack = new HoneycombStack(app, 'MyBeehiveStack', { foundationStack })
   // THEN
