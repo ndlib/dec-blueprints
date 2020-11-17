@@ -14,24 +14,18 @@ import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { StringParameter } from '@aws-cdk/aws-ssm'
 import { CustomEnvironment } from './custom-environment'
-import { FoundationStack } from './foundation-stack'
 import { SharedServiceStackProps } from './shared-stack-props'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 
 export interface BuzzStackProps extends SharedServiceStackProps {
   readonly env: CustomEnvironment,
-  readonly foundationStack: FoundationStack,
   readonly appDirectory: string
   readonly hostnamePrefix: string
 }
 
 export class BuzzStack extends cdk.Stack {
-  public readonly hostname: string
-
   constructor (scope: cdk.Construct, id: string, props: BuzzStackProps) {
     super(scope, id, props)
-
-    // The code that defines your stack goes here
 
     const loadBalancer = new HttpsAlb(this, 'loadBalancer', {
       internetFacing: true,
@@ -39,7 +33,7 @@ export class BuzzStack extends cdk.Stack {
       certificateArns: [props.foundationStack.certificate.certificateArn],
     })
 
-    const databaseConnectSecurityGroupParam = StringParameter.valueFromLookup(this, `/all/${props.hostnamePrefix}/sg_database_connect`)
+    const databaseConnectSecurityGroupParam = StringParameter.valueFromLookup(this, `/all/buzz/sg_database_connect`)
     const connectSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSqlSG', databaseConnectSecurityGroupParam)
     const appSecurityGroup = new SecurityGroup(this, 'AppSecurityGroup', {
       vpc: props.foundationStack.vpc,
@@ -57,7 +51,7 @@ export class BuzzStack extends cdk.Stack {
 
     const secretsHelper = (task: string, key: string) => {
       const parameter = StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
-        parameterName: `/all/${props.hostnamePrefix}/production/${key}`,
+        parameterName: `/all/${this.stackName}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
       })
       return Secret.fromSsmParameter(parameter)
@@ -79,7 +73,6 @@ export class BuzzStack extends cdk.Stack {
         PORT: '80',
         AWS_REGION: this.region,
         RAILS_LOG_TO_STDOUT: 'true',
-        // ENV_SSM_PATH: `all/${props.hostnamePrefix}/prep`,
       },
       secrets: {
         RAILS_ENV: secretsHelper('RailsService', 'rails_env'),
@@ -111,7 +104,7 @@ export class BuzzStack extends cdk.Stack {
         'ssm:*',
       ],
       resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${props.hostnamePrefix}/*`),
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${this.stackName}/*`),
       ],
     }))
 
