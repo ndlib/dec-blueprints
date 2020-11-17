@@ -14,9 +14,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     namespace,
     env: env,
   }
-  const networkStackName = app.node.tryGetContext('networkStackName')
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-    networkStackName,
     ...commonProps,
   })
 
