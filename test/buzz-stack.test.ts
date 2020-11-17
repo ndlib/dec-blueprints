@@ -23,10 +23,9 @@ describe('non-production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const networkStackName = 'network'
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     return new BuzzStack(app, 'MyBuzzStack', {
       env,
       foundationStack,
@@ -40,7 +39,7 @@ describe('non-production infrastructure', () => {
   test('creates load balancer security group in assigned VPC', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResource('AWS::EC2::SecurityGroup', {
-      VpcId: { 'Fn::ImportValue': 'network:VPCID' },
+      VpcId: { 'Fn::ImportValue': 'test-network:VPCID' },
     }))
   })
 
@@ -112,9 +111,8 @@ describe('production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const networkStackName = 'network'
     const buzzContext = getContextByNamespace('buzz')
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, networkStackName })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     return new BuzzStack(app, 'MyBuzzStack', {
       env,
       name: 'prod',
