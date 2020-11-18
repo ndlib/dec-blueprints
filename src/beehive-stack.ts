@@ -75,7 +75,7 @@ export class BeehiveStack extends cdk.Stack {
       new CnameRecord(this, 'BeehiveCNAME', { // eslint-disable-line no-new
         recordName: this.hostname,
         comment: this.hostname,
-        domainName: this.cloudfront.distributionDomainName,
+        domainName: distribution.distributionDomainName,
         zone: props.foundationStack.hostedZone,
         ttl: cdk.Duration.minutes(15),
       })
