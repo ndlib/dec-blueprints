@@ -27,8 +27,8 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly testStack: BeehiveStack;
 //  readonly prodStack: BeehiveStack;
 //  readonly domainStackName: string;
-//  readonly owner: string;
-//  readonly contact: string;
+  readonly owner: string;
+  readonly contact: string;
 //  readonly createDns: boolean;
 //  readonly pipelineNotificationReceivers: string;
 };
@@ -85,9 +85,9 @@ export class BeehivePipelineStack extends cdk.Stack {
               'npm run build',
               'cd $CODEBUILD_SRC_DIR_InfraCode',
               'npm run build',
-              `npm run cdk deploy -- ${props.testStack.testStackName}\
+              `npm run cdk deploy -- ${props.testStack.stackName} \
                 --require-approval never --exclusively \
-                -c namespace=th-dec -c env=dev \
+                -c namespace=th-dec -c env=dev -c owner=${props.owner} -c contact=${props.contact} \
                 -c appSourcePath=$CODEBUILD_SRC_DIR/build`,
 //                -c namespace=th-dec -c env=dev -c owner=${props.owner} -c contact=${props.contact} \
 //                -c createDns=${props.createDns.toString()} -c domainStackName=${props.domainStackName} \
