@@ -9,6 +9,8 @@ import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string;
+  readonly testStackName: string;
+  readonly prodStackName: string;
   readonly appSourcePath: string;
   readonly env: CustomEnvironment;
   readonly foundationStack: FoundationStack;
