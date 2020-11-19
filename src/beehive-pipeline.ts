@@ -4,11 +4,13 @@ import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
-import { BeehiveStack } from '../lib/beehive-stack';
+import { BeehiveStack } from './beehive-stack';
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core';
-import { CDKPipelineProject } from '../lib/cdk-pipeline-project';
+import { CDKPipelineProject } from './cdk-pipeline-project';
 import { Runtime } from '@aws-cdk/aws-lambda';
+import { FoundationStack } from './foundation-stack';
+import { CustomEnvironment } from './custom-environment';
 //import { GlobalActions, NamespacedPolicy } from './namespaced-policy';
 import { PipelineNotifications } from '@ndlib/ndlib-cdk';
 
@@ -49,7 +51,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: cdk.SecretValue.secretsManager(`${props.env.oauthTokenPath}, { jsonField: 'oauth' }`),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
