@@ -21,6 +21,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const beehiveContext = getContextByNamespace('beehive')
   const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
     foundationStack,
+    testStack: testStacks.beehiveStack,
     ...commonProps,
     ...beehiveContext,
   })
