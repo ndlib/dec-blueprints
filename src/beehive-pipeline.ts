@@ -51,7 +51,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
@@ -60,7 +60,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'InfraCode',
         branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+        oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
         output: infraSourceArtifact,
         owner: props.infraRepoOwner,
         repo: props.infraRepoName,
@@ -85,7 +85,7 @@ export class BeehivePipelineStack extends cdk.Stack {
               'npm run build',
               'cd $CODEBUILD_SRC_DIR_InfraCode',
               'npm run build',
-              `npm run cdk deploy -- ${props.testStack.stackName} \
+              `npm run cdk deploy -- ${props.testStack.testStackName}\
                 --require-approval never --exclusively \
                 -c namespace=th-dec -c env=dev \
                 -c appSourcePath=$CODEBUILD_SRC_DIR/build`,
