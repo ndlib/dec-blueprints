@@ -51,7 +51,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
         actionName: 'AppCode',
         branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(`${props.env.oauthTokenPath}, { jsonField: 'oauth' }`),
+        oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
         output: appSourceArtifact,
         owner: props.appRepoOwner,
         repo: props.appRepoName,
