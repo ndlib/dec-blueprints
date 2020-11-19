@@ -39,6 +39,7 @@
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
   "beehive:appSourceBranch": "master",
+  "beehive:appSourcePath": "../beehive/build",
   "honeypot:hostnamePrefix": "honeypot",
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
