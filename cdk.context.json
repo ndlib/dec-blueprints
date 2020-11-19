@@ -7,6 +7,7 @@
       "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
       "networkStackName": "unpeered-network",
+      "oauthTokenPath": "/all/github/ndlib-git",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -18,6 +19,7 @@
       "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
       "networkStackName": "unpeered-network",
+      "oauthTokenPath": "/all/github/ndlib-git",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "createGithubWebhooks": true
@@ -29,7 +31,6 @@
   "contact": "web-and-software-engineering-group@nd.edu",
   "projectName": "dec",
   "description": "Infrastructure for DEC project",
-  "oauthTokenPath": "/all/github/ndlib-git",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
