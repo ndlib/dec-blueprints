@@ -7,7 +7,7 @@
       "domainName": "libraries.nd.edu",
       "domainStackName": "libraries-domain",
       "networkStackName": "unpeered-network",
-      "oauthTokenPath": "/all/github/ndlib-git",
+      "oauthTokenPath": "/esu/github/ndlib-git",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
       "createGithubWebhooks": false
@@ -19,7 +19,7 @@
       "domainName": "library.nd.edu",
       "domainStackName": "library-domain",
       "networkStackName": "unpeered-network",
-      "oauthTokenPath": "/all/github/ndlib-git",
+      "oauthTokenPath": "/esu/github/ndlib-git",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
       "createGithubWebhooks": true
