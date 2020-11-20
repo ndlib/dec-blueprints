@@ -1,12 +1,12 @@
 import { App } from '@aws-cdk/core'
-import { BeehiveStack } from '../lib/beehive-stack'
-import { BuzzStack } from '../lib/buzz-stack'
-import { CustomEnvironment } from '../lib/custom-environment'
-import { FoundationStack } from '../lib/foundation-stack'
-import { HoneycombStack } from '../lib/honeycomb-stack'
-import { HoneypotStack } from '../lib/honeypot-stack'
-import { Stacks } from '../lib/types'
-import { getContextByNamespace } from '../lib/context-helpers'
+import { BeehiveStack } from '../src/beehive-stack'
+import { BuzzStack } from '../src//buzz/buzz-stack'
+import { CustomEnvironment } from '../src/custom-environment'
+import { FoundationStack } from '../src/foundation-stack'
+import { HoneycombStack } from '../src/honeycomb-stack'
+import { HoneypotStack } from '../src/honeypot-stack'
+import { Stacks } from '../src/types'
+import { getContextByNamespace } from '../src/context-helpers'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment): Stacks => {
   // Construct common props that are required by all service stacks
