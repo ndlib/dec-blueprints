@@ -13,8 +13,8 @@ import { ApplicationListenerRule, ApplicationProtocol, ApplicationTargetGroup } 
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { StringParameter } from '@aws-cdk/aws-ssm'
-import { CustomEnvironment } from './custom-environment'
-import { SharedServiceStackProps } from './shared-stack-props'
+import { CustomEnvironment } from '../custom-environment'
+import { SharedServiceStackProps } from '../shared-stack-props'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 
 export interface BuzzStackProps extends SharedServiceStackProps {
