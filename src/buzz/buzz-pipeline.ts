@@ -12,6 +12,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import s3 = require('@aws-cdk/aws-s3')
 import { CustomEnvironment } from '../custom-environment'
+import { env } from 'process'
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -113,7 +114,7 @@ export class BuzzPipelineStack extends Stack {
     const testHostnamePrefix = 'buzz-test'
     const testHost = `${testHostnamePrefix}.${resolvedDomain}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
-      contextEnvName: 'dev', 
+      contextEnvName: props.env.name, 
       targetStack: `${testNamespace}-service`,
       dependsOnStacks: [],
       infraSourceArtifact,
