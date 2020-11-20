@@ -95,7 +95,7 @@ export class CDKPipelineDeploy extends Construct {
           install: {
             commands: [
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
-              'yarn install',
+              'npm install',
             ],
             'runtime-versions': {
               nodejs: '12.x',
