@@ -58,7 +58,7 @@ export class BuzzStack extends cdk.Stack {
     }
 
     const railsDockerAsset = new DockerImageAsset(this, 'railsImageAsset', {
-      directory: '../buzz',
+      directory: props.appDirectory,
       file: 'docker/Dockerfile',
     })
 
