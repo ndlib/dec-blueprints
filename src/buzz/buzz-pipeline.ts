@@ -113,7 +113,7 @@ export class BuzzPipelineStack extends Stack {
     const testHostnamePrefix = 'buzz-test'
     const testHost = `${testHostnamePrefix}.${resolvedDomain}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
-      contextEnvName: 'test', 
+      contextEnvName: 'dev', 
       targetStack: `${testNamespace}-service`,
       dependsOnStacks: [],
       infraSourceArtifact,
