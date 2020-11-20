@@ -31,6 +31,7 @@
     "typescript": "~4.0.5"
   },
   "dependencies": {
+    "@aws-cdk/aws-codepipeline-actions": "^1.74.0",
     "@aws-cdk/core": "1.74.0",
     "@ndlib/ndlib-cdk": "^1.5.0",
     "source-map-support": "^0.5.19"
