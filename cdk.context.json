@@ -35,7 +35,7 @@
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
-  "infraSourceBranch": "main",
+  "infraSourceBranch": "ESU-1515-buzz-deployment-cdk",
   "beehive:hostnamePrefix": "collections",
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
