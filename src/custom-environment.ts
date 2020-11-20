@@ -60,6 +60,12 @@ export class CustomEnvironment implements Environment {
    */
   readonly alarmsEmail: string
 
+  /**
+   * 
+   * The path in Secrets Manager to lookup GitHub credentials
+   */
+  readonly oauthTokenPath: string
+
   static fromContext = (node: ConstructNode, name: string): CustomEnvironment => {
     const contextEnv = getRequiredContext(node, 'environments')[name]
     if (contextEnv === undefined || contextEnv === null) {

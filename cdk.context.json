@@ -9,7 +9,8 @@
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "createGithubWebhooks": false
+      "createGithubWebhooks": false,
+      "oauthTokenPath": "/all/github/ndlib-git"
     },
     "prod": {
       "account": "230391840102",
@@ -20,7 +21,8 @@
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-marble-notifier",
-      "createGithubWebhooks": true
+      "createGithubWebhooks": true,
+      "oauthTokenPath": "/all/github/ndlib-git"
     }
   },
   "env": "dev",
