@@ -127,7 +127,7 @@ export class BuzzPipelineStack extends Stack {
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
         hostnamePrefix: testHostnamePrefix,
-        appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
+        "buzz:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
