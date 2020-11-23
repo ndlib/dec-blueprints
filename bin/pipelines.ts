@@ -11,6 +11,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const infraRepoName = app.node.tryGetContext('infraRepoName')
   const infraRepoOwner = app.node.tryGetContext('infraRepoOwner')
   const infraSourceBranch = app.node.tryGetContext('infraSourceBranch')
+  const dockerCredentialsPath = app.node.tryGetContext('dockerCredentialsPath')
   
   const commonProps = {
     namespace,
@@ -18,6 +19,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     infraRepoOwner: infraRepoOwner,
     infraRepoName: infraRepoName,
     infraSourceBranch: infraSourceBranch,
+    dockerCredentialsPath: dockerCredentialsPath,
   }
 
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {

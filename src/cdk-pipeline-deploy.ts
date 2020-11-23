@@ -181,7 +181,7 @@ export class CDKPipelineDeploy extends Construct {
       input: props.infraSourceArtifact,
       extraInputs: extraInputs,
       project: this.project,
-      runOrder: 1,
+      runOrder: 2,
       outputs: (props.outputArtifact ? [props.outputArtifact] : []),
     })
   }

@@ -170,6 +170,7 @@ export class NamespacedPolicy {
       ],
       resources: [
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/' + nameSpace + '/*'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/*'),
       ],
     })
   }
