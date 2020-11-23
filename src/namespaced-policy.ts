@@ -170,7 +170,6 @@ export class NamespacedPolicy {
       ],
       resources: [
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/' + nameSpace + '/*'),
-        'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/buzz/*',
       ],
     })
   }
