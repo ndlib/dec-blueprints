@@ -1,4 +1,4 @@
-import { BuildSpec, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
@@ -86,6 +86,16 @@ export class CDKPipelineDeploy extends Construct {
         buildImage: LinuxBuildImage.STANDARD_4_0,
         privileged: true,
       },
+      environmentVariables: {
+          DOCKER_TOKEN: {
+              value: '/esu/dockerhub/token',
+              type: BuildEnvironmentVariableType.PARAMETER_STORE,
+            },
+          DOCKER_USERNAME: {
+              value: '/esu/dockerhub/username',
+              type: BuildEnvironmentVariableType.PARAMETER_STORE,
+          },
+      },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
           'base-directory': props.outputDirectory,
@@ -111,6 +121,7 @@ export class CDKPipelineDeploy extends Construct {
           build: {
             commands: [
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
+              `echo $DOCKER_TOKEN | docker login --username $DOCKER_USERNAME --password-stdin`,
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
                 -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,
