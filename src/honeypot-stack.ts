@@ -10,6 +10,7 @@ import { SubnetType, Vpc } from '@aws-cdk/aws-ec2'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import ecs = require('@aws-cdk/aws-ecs')
 import ssm = require('@aws-cdk/aws-ssm')
+import fs = require('fs')
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
@@ -140,6 +141,11 @@ export class HoneypotStack extends cdk.Stack {
       listener: alb.defaultListener,
       priority: 1,
     })
+
+    if(!fs.existsSync(props.appDirectory)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
+      return
+    }
 
     if (props.env.createDns) {
       const cnameRecord = new CnameRecord(this, 'ServiceCNAME', {
