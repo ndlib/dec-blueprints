@@ -80,7 +80,11 @@ export class HoneypotStack extends cdk.Stack {
       logGroup: logs,
       streamPrefix: `${this.stackName}-Task`,
     })
-
+    
+    if(!fs.existsSync(props.appDirectory)) {
+      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
+      return
+    }
     // Add Container
     const containerImage = new DockerImageAsset(this, 'DockerImageAsset', {
       directory: props.appDirectory,
@@ -141,11 +145,6 @@ export class HoneypotStack extends cdk.Stack {
       listener: alb.defaultListener,
       priority: 1,
     })
-
-    if(!fs.existsSync(props.appDirectory)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
-      return
-    }
 
     if (props.env.createDns) {
       const cnameRecord = new CnameRecord(this, 'ServiceCNAME', {
