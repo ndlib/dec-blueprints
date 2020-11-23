@@ -13,7 +13,8 @@ import ssm = require('@aws-cdk/aws-ssm')
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
-  readonly env: CustomEnvironment
+  readonly env: CustomEnvironment,
+  readonly appDirectory: string
   readonly foundationStack: FoundationStack
 }
 export class HoneypotStack extends cdk.Stack {
@@ -81,7 +82,7 @@ export class HoneypotStack extends cdk.Stack {
 
     // Add Container
     const containerImage = new DockerImageAsset(this, 'DockerImageAsset', {
-      directory: '../honeypot',
+      directory: props.appDirectory,
       file: 'docker/Dockerfile',
     })
 

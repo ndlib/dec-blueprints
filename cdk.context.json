@@ -44,6 +44,7 @@
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
   "honeypot:appSourceBranch": "master",
+  "honeypot:appDirectory": "../honeypot",
   "buzz:hostnamePrefix": "buzz",
   "buzz:appRepoOwner": "ndlib",
   "buzz:appRepoName": "buzz",
