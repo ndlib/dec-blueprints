@@ -80,8 +80,8 @@ export class HoneypotStack extends cdk.Stack {
       logGroup: logs,
       streamPrefix: `${this.stackName}-Task`,
     })
-    
-    if(!fs.existsSync(props.appDirectory)) {
+
+    if (!fs.existsSync(props.appDirectory)) {
       this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
       return
     }
