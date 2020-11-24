@@ -7,12 +7,11 @@ import { BuzzStack } from '../src/buzz/buzz-stack'
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
-
   const infraRepoName = app.node.tryGetContext('infraRepoName')
   const infraRepoOwner = app.node.tryGetContext('infraRepoOwner')
   const infraSourceBranch = app.node.tryGetContext('infraSourceBranch')
   const dockerCredentialsPath = app.node.tryGetContext('dockerCredentialsPath')
-  
+
   const commonProps = {
     namespace,
     env: env,
@@ -30,6 +29,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {
     foundationStack,
     testStack: testStacks.BuzzStack,
+    prodStack: prodStacks.BuzzStack,
     ...commonProps,
     ...buzzContext,
   })
