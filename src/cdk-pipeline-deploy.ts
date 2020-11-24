@@ -122,7 +122,7 @@ export class CDKPipelineDeploy extends Construct {
           build: {
             commands: [
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
-              `echo $DOCKER_TOKEN | docker login --username $DOCKER_USERNAME --password-stdin`,
+              'echo $DOCKER_TOKEN | docker login --username $DOCKER_USERNAME --password-stdin',
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
                 -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,

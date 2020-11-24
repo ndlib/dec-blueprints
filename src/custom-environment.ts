@@ -61,7 +61,7 @@ export class CustomEnvironment implements Environment {
   readonly alarmsEmail: string
 
   /**
-   * 
+   *
    * The path in Secrets Manager to lookup GitHub credentials
    */
   readonly oauthTokenPath: string
