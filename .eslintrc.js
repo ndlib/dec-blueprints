@@ -18,6 +18,7 @@ module.exports = {
     'jsx-quotes'              : ['error', 'prefer-single'],
     'object-curly-spacing'    : ['error', 'always'],
     'space-in-parens'         : ['error', 'never'],
+    'no-template-curly-in-string' : 'off', // disabling because of https://github.com/eslint/eslint/issues/12466 having not been resolved
     'semi'                    : 'off', // must be disabled for @typescript-eslint/semi to work
     '@typescript-eslint/semi' : ['error', 'never'],
     'no-unused-vars'          : 'off',
