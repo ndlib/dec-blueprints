@@ -19,6 +19,7 @@ test('Empty Stack', () => {
     useExistingDnsZone: false,
     notificationReceivers: 'test@test.edu',
     alarmsEmail: 'test@test.edu',
+    oauthTokenPath: '/path/to/oauth',
   }
   const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
   const stack = new HoneycombStack(app, 'MyBeehiveStack', { foundationStack })

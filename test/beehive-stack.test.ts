@@ -20,6 +20,7 @@ describe('non-production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
@@ -124,7 +125,7 @@ describe('non-production infrastructure', () => {
     expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
       DistributionConfig: {
         Logging: {
-          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA' },
+          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85RegionalDomainName90114C32' },
           IncludeCookies: true,
           Prefix: 'web/MyTestStack-test',
         },
@@ -168,6 +169,7 @@ describe('production infrastructure', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
@@ -214,7 +216,7 @@ describe('production infrastructure', () => {
     expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
       DistributionConfig: {
         Logging: {
-          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85DomainNameD13114CA' },
+          Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85RegionalDomainName90114C32' },
           IncludeCookies: true,
           Prefix: 'web/MyTestStack',
         },
@@ -239,6 +241,7 @@ describe('do not create dns', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')

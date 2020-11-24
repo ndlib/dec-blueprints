@@ -25,6 +25,7 @@ describe('FoundationStack', () => {
           useExistingDnsZone: true,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
+          oauthTokenPath: '/path/to/oauth',
         },
       })
     }
@@ -89,6 +90,7 @@ describe('FoundationStack', () => {
           useExistingDnsZone: false,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
+          oauthTokenPath: '/path/to/oauth',
         },
       })
     }

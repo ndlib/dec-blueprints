@@ -20,12 +20,14 @@ describe('Production stack infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      appDirectory: 'test/fixtures',
       ...honeypotContext,
     })
   }
@@ -52,12 +54,14 @@ describe('Dev stack infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      appDirectory: 'test/fixtures',
       ...honeypotContext,
     })
   }

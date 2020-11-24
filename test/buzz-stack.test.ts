@@ -22,6 +22,7 @@ describe('non-production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
@@ -110,6 +111,7 @@ describe('production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      oauthTokenPath: '/path/to/oauth',
     }
     const buzzContext = getContextByNamespace('buzz')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
