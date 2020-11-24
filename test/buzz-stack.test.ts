@@ -30,7 +30,7 @@ describe('non-production infrastructure', () => {
     return new BuzzStack(app, 'MyBuzzStack', {
       env,
       foundationStack,
-      appDirectory: '../buzz',
+      appDirectory: 'test/fixtures',
       hostnamePrefix,
       ...buzzContext,
     })
@@ -120,7 +120,7 @@ describe('production infrastructure', () => {
       name: 'prod',
       hostnamePrefix: 'buzz',
       foundationStack,
-      appDirectory: '../buzz',
+      appDirectory: 'test/fixtures',
       ...buzzContext,
     })
   }
