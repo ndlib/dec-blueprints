@@ -50,6 +50,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
+  readonly dockerCredentialsPath: string
 
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
@@ -87,14 +88,14 @@ export class CDKPipelineDeploy extends Construct {
         privileged: true,
       },
       environmentVariables: {
-          DOCKER_TOKEN: {
-              value: '/esu/dockerhub/token',
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-          DOCKER_USERNAME: {
-              value: '/esu/dockerhub/username',
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-          },
+        DOCKER_TOKEN: {
+          value: '/esu/dockerhub/token',
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
+        DOCKER_USERNAME: {
+          value: '/esu/dockerhub/username',
+          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        },
       },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
