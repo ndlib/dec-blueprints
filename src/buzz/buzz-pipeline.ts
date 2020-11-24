@@ -2,14 +2,12 @@ import { Fn, Stack, SecretValue, RemovalPolicy } from '@aws-cdk/core'
 import { BuildSpec, BuildEnvironmentVariableType, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { BucketEncryption } from '@aws-cdk/aws-s3'
-import { SecurityGroup } from '@aws-cdk/aws-ec2'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
-import { Secret as ecsSecret } from '@aws-cdk/aws-ecs' 
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
+import { CDKPipelineMigrate } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import cdk = require('@aws-cdk/core')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
@@ -63,10 +61,10 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-t-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-t-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-t-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-t-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
@@ -116,94 +114,32 @@ export class BuzzPipelineStack extends Stack {
     })
 
     //Global variables for pipeline
-    const databaseConnectSecurityGroupId = StringParameter.valueFromLookup(this, '/all/buzz/sg_database_connect')
-    const databaseConnectSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'databaseConnectSG', databaseConnectSecurityGroupId)
     const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
-    const migrateSecurityGroup = new SecurityGroup(this, 'MigrateSecurityGroup', {
-        vpc: props.foundationStack.vpc,
-    })
 
     //Global variables for test space
     const testNamespace = `${props.namespace}-test`
-
+    const testSsmPrefix = `dec-test-buzz`
 
     // Database Migration Test
-    const testDbMigrate = new PipelineProject(this, testNamespace, {
-        vpc: props.foundationStack.vpc,
-        securityGroups: [
-            migrateSecurityGroup,
-            databaseConnectSecurityGroup,
-        ],        
-        environment: {
-            buildImage: LinuxBuildImage.fromDockerRegistry('ruby:2.4.4',{
-                secretsManagerCredentials: dockerCredentials,
-            }),
-        },
-        environmentVariables: {
-            RDS_HOSTNAME: {
-              value: `/all/dec-test-buzz/database/host`,
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-            RDS_DB_NAME:{
-              value: `/all/dec-test-buzz/database/database`,
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-            RDS_USERNAME:{
-              value: `/all/dec-test-buzz/database/username`,
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-            RDS_PASSWORD:{
-              value: `/all/dec-test-buzz/database/password`,
-              type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-            RDS_PORT:{
-                value: `/all/dec-test-buzz/database/port`,
-                type: BuildEnvironmentVariableType.PARAMETER_STORE,
-              },
-            RAILS_ENV:{
-                value: `/all/dec-test-buzz/rails_env`,
-                type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-            RAILS_SECRET_KEY_BASE:{
-                value: `/all/dec-test-buzz/rails-secret-key-base`,
-                type: BuildEnvironmentVariableType.PARAMETER_STORE,
-            },
-          },
-        buildSpec: BuildSpec.fromObject({
-            phases: {
-                install: {
-                    commands: [
-                        `apt-key adv --keyserver keyserver.ubuntu.com --recv-keys AA8E81B4331F7F50 && apt-get update -qq && apt-get install -y build-essential libpq-dev wget nodejs unzip libssl-dev git libmysql++-dev`,
-                        `gem install bundler -v 1.17.3`,
-                        `bundle install`,
-                    ],
-                },
-                build: {
-                    commands: [
-                        `bundle exec rake db:migrate --trace`,
-                    ],
-                },
-            },
-            version: '0.2',
-        }),
+    const migrateTest = new CDKPipelineMigrate(this, `${props.namespace}-MigrateTest`,{
+        contextEnvName: props.env.name,
+        namespace: testNamespace,
+        dockerCredentialsPath: props.dockerCredentialsPath,
+        appSourceArtifact,
+        ssmPrefix: testSsmPrefix,
+        foundationStack:  props.foundationStack,
     })
 
-    const testMigrateAction = new codepipelineActions.CodeBuildAction({
-        input: appSourceArtifact,
-        actionName: 'DBMigration',
-        project: testDbMigrate,
-        runOrder: 1,
-    })
-    testDbMigrate.addToRolePolicy(new PolicyStatement({
-        actions: [
-          'ssm:GetParameter',
-          'ssm:GetParameters',
-        ],
-        resources: [
-          cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/dec-test-buzz/*`),
-        ],
-      }))
-
+    migrateTest.project.addToRolePolicy(new PolicyStatement({
+            actions: [
+              'ssm:GetParameter',
+              'ssm:GetParameters',
+            ],
+            resources: [
+              cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${testSsmPrefix}/*`),
+            ],
+          }))
+    
     // CDK Deploy Test
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testHostnamePrefix = 'buzz-test'
@@ -211,6 +147,7 @@ export class BuzzPipelineStack extends Stack {
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name, 
       targetStack: `${testNamespace}-buzz`,
+      dockerCredentialsPath: props.dockerCredentialsPath,
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
@@ -252,28 +189,54 @@ export class BuzzPipelineStack extends Stack {
       runOrder: 98,
     })
 
-    // CDK Deploy Prod
+    //Global variables for test space
     const prodNamespace = `${props.namespace}-prod`
+    const prodSsmPrefix = `dec-prod-buzz`
+
+
+    // Database Migration Test
+    const migrateProd = new CDKPipelineMigrate(this, `${props.namespace}-MigrateProd`,{
+        contextEnvName: props.env.name,
+        namespace: prodNamespace,
+        dockerCredentialsPath: props.dockerCredentialsPath,
+        appSourceArtifact,
+        ssmPrefix: prodSsmPrefix,
+        foundationStack:  props.foundationStack,
+    })
+
+    migrateProd.project.addToRolePolicy(new PolicyStatement({
+            actions: [
+              'ssm:GetParameter',
+              'ssm:GetParameters',
+            ],
+            resources: [
+              cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${prodSsmPrefix}/*`),
+            ],
+          }))
+    
+    // CDK Deploy Prod
     const prodHostnamePrefix = 'buzz'
     const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
-    // const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
-    //   targetStack: `${prodNamespace}-service`,
-    //   dependsOnStacks: [],
-    //   infraSourceArtifact,
-    //   appSourceArtifact,
-    //   namespace: prodNamespace,
-    //   additionalContext: {
-    //     owner: props.owner,
-    //     contact: props.contact,
-    //     networkStack: props.networkStackName,
-    //     domainStack: props.domainStackName,
-    //     createDns: props.createDns ? 'true' : 'false',
-    //     hostnamePrefix: prodHostnamePrefix,
-    //     appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
-    //     infraDirectory: '$CODEBUILD_SRC_DIR',
-    //   },
-    // })
-    // addPermissions(deployProd, prodNamespace)
+    const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
+      contextEnvName: props.env.name,
+      targetStack: `${prodNamespace}-buzz`,
+      dependsOnStacks: [],
+      dockerCredentialsPath: props.dockerCredentialsPath,
+      infraSourceArtifact,
+      appSourceArtifact,
+      namespace: prodNamespace,
+      additionalContext: {
+        owner: props.owner,
+        contact: props.contact,
+        networkStack: props.networkStackName,
+        domainStack: props.domainStackName,
+        createDns: props.createDns ? 'true' : 'false',
+        "buzz:hostnamePrefix": prodHostnamePrefix,
+        "buzz:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+        infraDirectory: '$CODEBUILD_SRC_DIR',
+      },
+    })
+    addPermissions(deployProd, prodNamespace)
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -300,13 +263,13 @@ export class BuzzPipelineStack extends Stack {
           stageName: 'Source',
         },
         {
-          actions: [ testMigrateAction, deployTest.action, smokeTestsAction /* ,approvalAction*/ ],
+          actions: [ migrateTest.action, deployTest.action, smokeTestsAction /* ,approvalAction*/ ],
           stageName: 'Test',
         },
-        // {
-        //   actions: [deployProd.action],
-        //   stageName: 'Production',
-        // },
+        {
+          actions: [ migrateProd.action, deployProd.action],
+          stageName: 'Production',
+        },
       ],
     })
 
@@ -320,6 +283,29 @@ export class BuzzPipelineStack extends Stack {
       }))
 
     deployTest.project.addToRolePolicy(new PolicyStatement({
+        actions: [
+            'ecr:DescribeImages',
+            'ecr:InitiateLayerUpload',
+            'ecr:UploadLayerPart',
+            'ecr:CompleteLayerUpload',
+            'ecr:PutImage',
+            'ecr:BatchCheckLayerAvailability',
+        ],
+        resources: [
+            cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
+        ],
+    }))
+
+    deployProd.project.addToRolePolicy(new PolicyStatement({
+        actions: [
+          'ssm:GetParameter',
+        ],
+        resources: [
+          cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
+        ],
+      }))
+
+    deployProd.project.addToRolePolicy(new PolicyStatement({
         actions: [
             'ecr:DescribeImages',
             'ecr:InitiateLayerUpload',
