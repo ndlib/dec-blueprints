@@ -41,6 +41,10 @@
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
   "beehive:appSourceBranch": "master",
+  "beehive:appSourcePath": "../beehive/build",
+  "beehive:infraRepoOwner": "ndlib",
+  "beehive:infraRepoName": "dec-blueprints",
+  "beehive:infraSourceBranch": "beehive-pipe",
   "honeypot:hostnamePrefix": "honeypot",
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
@@ -55,5 +59,6 @@
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
   },
-  "ssm:account=230391840102:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-05593041929017eb2"
+  "ssm:account=230391840102:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-05593041929017eb2",
+  "ssm:account=333680067100:parameterName=/all/buzz/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71"
 }
