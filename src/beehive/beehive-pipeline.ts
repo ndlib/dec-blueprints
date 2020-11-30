@@ -35,6 +35,12 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly foundationStack: FoundationStack;
 };
 
+const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
+  deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
+  deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
+  deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
+}
+
 export class BeehivePipelineStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
     super(scope, id, props);
@@ -75,6 +81,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const testNamespace = `${props.namespace}-test`
     const testSsmPrefix = `dec-test-beehive`
     
+
     const testHostnamePrefix = 'beehive-test';
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
     const testHost = `${testHostnamePrefix}.${resolvedDomain}`
@@ -97,6 +104,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
+    addPermissions(deployTest, testNamespace)
     /*
     const testDeployAction = new codepipelineActions.CodeBuildAction({
       actionName: 'Deploy',
