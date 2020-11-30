@@ -1,6 +1,6 @@
 import { App } from '@aws-cdk/core'
 import { BeehiveStack } from '../src/beehive-stack'
-import { BuzzStack } from '../src//buzz/buzz-stack'
+import { BuzzStack } from '../src/buzz/buzz-stack'
 import { CustomEnvironment } from '../src/custom-environment'
 import { FoundationStack } from '../src/foundation-stack'
 import { HoneycombStack } from '../src/honeycomb-stack'

@@ -7,7 +7,7 @@ import helpers = require('../test/helpers')
 
 describe('CodeBuild actions', () => {
   beforeEach(() => {
-    helpers.mockDockerCredentials('/path/to/credentials')
+    helpers.mockDockerCredentials()
   })
   const stack = () => {
     const app = new cdk.App()
@@ -27,15 +27,15 @@ describe('CodeBuild actions', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
       oauthTokenPath: '/path/to/oauth',
-      dockerCredentialsPath: '/path/to/credentials',
+      dockerCredentialsPath: '/all/dockerhub/credentials',
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+
     return new BuzzPipelineStack(app, 'MyBuzzPipelineStack', {
       env,
       foundationStack,
-      appDirectory: 'test/fixtures',
       hostnamePrefix,
       ...buzzContext,
       namespace: 'testNamespace',
@@ -48,7 +48,7 @@ describe('CodeBuild actions', () => {
 
   test('creates codebuilds for DB migration', () => {
     const newStack = stack()
-    expectCDK(newStack).to(haveResource('AWS::CodeBuild::Project', {
+    expectCDK(newStack).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
         RegistryCredential: {
           Credential: '/path/to/credentials',
