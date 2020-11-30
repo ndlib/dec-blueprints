@@ -5,7 +5,6 @@ import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
-import { BeehiveStack } from './beehive-stack';
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
@@ -26,7 +25,6 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly oauthTokenPath: string;
   readonly dockerCredentialsPath: string;
-  readonly testStack: BeehiveStack;
   readonly networkStackName: string;
   readonly domainStackName: string;
   readonly owner: string;
