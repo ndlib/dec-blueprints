@@ -73,7 +73,7 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     //Global variables for test space
     const testNamespace = `${props.namespace}-test`
-    const testSsmPrefix = `dec-test-buzz`
+    const testSsmPrefix = `dec-test-beehive`
     
     const testHostnamePrefix = 'beehive-test';
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
@@ -93,7 +93,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
         "beehive:hostnamePrefix": testHostnamePrefix,
-        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+//        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
