@@ -18,24 +18,13 @@ export const mockHostedZoneFromLookup = (response?: any) => {
   })
 }
 
-export const mockDockerCredentials = (response?: ISecret) => {
+export const mockDockerCredentials = (response?: any) => {
   jest.mock('@aws-cdk/aws-secretsmanager')
   const mockCredentialsFromLookup = jest.spyOn(Secret, 'fromSecretNameV2')
   mockCredentialsFromLookup.mockImplementation((scope, id, query) => {
     return response ?? {
-      secretArn: 'secretArn',
-      secretValue: SecretValue.plainText('secret'),
-      stack: 'stack',
-      env: 'env',
-      node: process,
-      secretName: 'secret',
-      addRotationSchedule: '',
-      addToResourcePolicy: '',
-      attach: '',
-      denyAccountRootDelete: '',
-      secretValueFromJson: (secret: 'secret') => 'secret',
+      secretName: 'test-secret',
       grantRead: (grantee: IGrantable) => (grantee),
-      grantWrite: (grantee: IGrantable) => (grantee),
     }
   },
   )

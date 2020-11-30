@@ -50,8 +50,9 @@ describe('CodeBuild actions', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
+        Image: 'ruby:2.4.4', // this should match what is in the helper class - and only the migrate tasks use the base ruby without app code
         RegistryCredential: {
-          Credential: '/path/to/credentials',
+          Credential: 'test-secret',
           CredentialProvider: 'SECRETS_MANAGER',
         },
       },
