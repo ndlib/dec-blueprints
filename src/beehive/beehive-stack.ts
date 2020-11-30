@@ -2,9 +2,9 @@ import * as cdk from '@aws-cdk/core'
 import { CloudFrontAllowedMethods, CloudFrontWebDistribution, OriginAccessIdentity, ViewerCertificate } from '@aws-cdk/aws-cloudfront'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { Bucket } from '@aws-cdk/aws-s3'
-import { SharedServiceStackProps } from './shared-stack-props'
-import { FoundationStack } from './foundation-stack'
-import { CustomEnvironment } from './custom-environment'
+import { SharedServiceStackProps } from '../shared-stack-props'
+import { FoundationStack } from '../foundation-stack'
+import { CustomEnvironment } from '../custom-environment'
 import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
