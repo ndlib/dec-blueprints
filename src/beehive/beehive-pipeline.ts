@@ -2,35 +2,39 @@ import codebuild = require('@aws-cdk/aws-codebuild');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
+import { Secret } from '@aws-cdk/aws-secretsmanager';
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
 import { BeehiveStack } from './beehive-stack';
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core';
-import { CDKPipelineProject } from './cdk-pipeline-project';
+import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
+import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
 import { Runtime } from '@aws-cdk/aws-lambda';
-import { FoundationStack } from './foundation-stack';
-import { CustomEnvironment } from './custom-environment';
-//import { GlobalActions, NamespacedPolicy } from './namespaced-policy';
+import { FoundationStack } from '../foundation-stack';
+import { CustomEnvironment } from '../custom-environment';
 import { PipelineNotifications } from '@ndlib/ndlib-cdk';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
-  readonly oauthTokenPath: string;
   readonly env: CustomEnvironment;
-  readonly foundationStack: FoundationStack;
-  readonly infraRepoOwner: string;
-  readonly infraRepoName: string;
-  readonly infraSourceBranch: string;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
   readonly appSourceBranch: string;
+  readonly infraRepoOwner: string;
+  readonly infraRepoName: string;
+  readonly infraSourceBranch: string;
+  readonly namespace: string;
+  readonly oauthTokenPath: string;
+  readonly dockerCredentialsPath: string;
   readonly testStack: BeehiveStack;
-//  readonly prodStack: BeehiveStack;
-//  readonly domainStackName: string;
+  readonly networkStackName: string;
+  readonly domainStackName: string;
   readonly owner: string;
   readonly contact: string;
-//  readonly createDns: boolean;
-//  readonly pipelineNotificationReceivers: string;
+  readonly createDns: boolean;
+  readonly slackNotifyStackName?: string;
+  readonly notificationReceivers?: string;
+  readonly foundationStack: FoundationStack;
 };
 
 export class BeehivePipelineStack extends cdk.Stack {
@@ -66,40 +70,36 @@ export class BeehivePipelineStack extends cdk.Stack {
         repo: props.infraRepoName,
     });
 
-    // Deploy Test Actions
-    const testDeployProject = new CDKPipelineProject(this, 'BeehiveDeployTest', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        phases: {
-          install: {
-            commands: [
-              'cd $CODEBUILD_SRC_DIR_AppCode',
-              'npm install',
-              'cd $CODEBUILD_SRC_DIR_InfraCode',
-              'npm install',
-            ],
-            'runtime-versions': Runtime.NODEJS_10_X,
-          },
-          build: {
-            commands: [
-              'cd $CODEBUILD_SRC_DIR_AppCode',
-              'npm run build',
-              'cd $CODEBUILD_SRC_DIR_InfraCode',
-              'npm run build',
-              `npm run cdk deploy -- ${props.testStack.stackName} \
-                --require-approval never --exclusively \
-                -c namespace=th-dec -c env=dev -c owner=${props.owner} -c contact=${props.contact} \
-                -c appSourcePath=$CODEBUILD_SRC_DIR/build`,
-//                -c namespace=th-dec -c env=dev -c owner=${props.owner} -c contact=${props.contact} \
-//                -c createDns=${props.createDns.toString()} -c domainStackName=${props.domainStackName} \
-            ]
-          },
-        },
-        version: '0.2',
-      }),
+    //Global variables for pipeline
+    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
+
+    //Global variables for test space
+    const testNamespace = `${props.namespace}-test`
+    const testSsmPrefix = `dec-test-buzz`
+    
+    const testHostnamePrefix = 'beehive-test';
+    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
+    const testHost = `${testHostnamePrefix}.${resolvedDomain}`
+    const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
+      contextEnvName: props.env.name,
+      targetStack: `${testNamespace}-beehive`,
+      dockerCredentialsPath: props.dockerCredentialsPath,
       dependsOnStacks: [],
-      targetStack: props.testStack,
-    });
-//    this.addDeployPolicies(props.testStack, testDeployProject, props);
+      infraSourceArtifact,
+      appSourceArtifact,
+      namespace: testNamespace,
+      additionalContext: {
+        owner: props.owner,
+        contact: props.contact,
+        networkStack: props.env.networkStackName,
+        domainStack: props.env.domainStackName,
+        createDns: props.env.createDns ? 'true' : 'false',
+        "beehive:hostnamePrefix": testHostnamePrefix,
+        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+        infraDirectory: '$CODEBUILD_SRC_DIR',
+      },
+    })
+    /*
     const testDeployAction = new codepipelineActions.CodeBuildAction({
       actionName: 'Deploy',
       extraInputs: [infraSourceArtifact],
@@ -107,7 +107,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       project: testDeployProject,
       runOrder: 1,
     });
-
+*/
     // Smoke Tests Action
 /*    const smokeTestsProject = new codebuild.PipelineProject(this, 'ResearchAwardSmokeTests', {
       buildSpec: codebuild.BuildSpec.fromObject({
@@ -224,7 +224,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         },
         {
 //          actions: [testDeployAction, smokeTestsAction, approvalAction],
-          actions: [testDeployAction, approvalAction],
+          actions: [deployTest.action],
           stageName: 'Test',
         },
 //        {
