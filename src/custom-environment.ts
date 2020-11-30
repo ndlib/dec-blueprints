@@ -33,11 +33,6 @@ export class CustomEnvironment implements Environment {
 
   readonly networkStackName: string
   /**
-   * The location in secrets manager for the GitHub OAuth token
-   */
-
-  readonly oauthTokenPath: string
-  /**
    * If true, the app will find an existing zone by the domainName given.
    * If false, the app will create one.
    */
