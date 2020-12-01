@@ -26,6 +26,7 @@ describe('Production stack infrastructure', () => {
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      appDirectory: './test/fixtures',
       ...honeypotContext,
     })
   }
@@ -58,6 +59,7 @@ describe('Dev stack infrastructure', () => {
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      appDirectory: './test/fixtures',
       ...honeypotContext,
     })
   }

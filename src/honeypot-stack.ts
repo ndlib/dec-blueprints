@@ -1,12 +1,12 @@
 import * as cdk from '@aws-cdk/core'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
-import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { SharedServiceStackProps } from './shared-stack-props'
 import { FoundationStack } from './foundation-stack'
 import { CustomEnvironment } from './custom-environment'
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { SubnetType, Vpc } from '@aws-cdk/aws-ec2'
+import { AssetHelpers } from './asset-helpers'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import ecs = require('@aws-cdk/aws-ecs')
 import ssm = require('@aws-cdk/aws-ssm')
@@ -14,6 +14,7 @@ import ssm = require('@aws-cdk/aws-ssm')
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
   readonly env: CustomEnvironment
+  readonly appDirectory: string
   readonly foundationStack: FoundationStack
 }
 export class HoneypotStack extends cdk.Stack {
@@ -80,13 +81,13 @@ export class HoneypotStack extends cdk.Stack {
     })
 
     // Add Container
-    const containerImage = new DockerImageAsset(this, 'DockerImageAsset', {
-      directory: '../honeypot',
+    const containerImage = AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', {
+      directory: props.appDirectory,
       file: 'docker/Dockerfile',
     })
 
     const container = appTask.addContainer('ruby24', {
-      image: ecs.ContainerImage.fromDockerImageAsset(containerImage),
+      image: containerImage,
       command: ['bash', '/usr/bin/docker-entrypoint.sh'],
       essential: true,
       logging,
