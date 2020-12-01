@@ -98,7 +98,7 @@ export class BuzzPipelineStack extends Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
@@ -107,7 +107,7 @@ export class BuzzPipelineStack extends Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,

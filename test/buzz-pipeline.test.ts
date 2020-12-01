@@ -26,7 +26,6 @@ describe('CodeBuild actions', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      oauthTokenPath: '/path/to/oauth',
       dockerCredentialsPath: '/all/dockerhub/credentials',
     }
     const hostnamePrefix = 'buzz-test'
@@ -39,6 +38,7 @@ describe('CodeBuild actions', () => {
       hostnamePrefix,
       ...buzzContext,
       namespace: 'testNamespace',
+      oauthTokenPath: '/path/to/oauth',
       ssmPrefix: 'ssmPrefix',
       appSourceArtifact: 'testAppArtifact',
       migrateSecurityGroup: 'sg-123456',
@@ -176,6 +176,7 @@ describe('CodePipeline', () => {
       hostnamePrefix,
       ...buzzContext,
       namespace: 'testNamespace',
+      oauthTokenPath: '/path/to/oauth',
       ssmPrefix: 'ssmPrefix',
       appSourceArtifact: 'testAppArtifact',
       migrateSecurityGroup: 'sg-123456',
