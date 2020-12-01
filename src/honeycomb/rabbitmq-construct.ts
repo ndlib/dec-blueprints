@@ -42,7 +42,7 @@ export class RabbitMqConstruct extends Construct {
     })
     mqSecurityGroup.addIngressRule(props.appSecurityGroup, Port.tcp(5671))
     this.secret = new Secret(this, 'RabbitMqSecret', {
-      secretName: `/all/${stackName}/secrets/rabbitmq`,
+      secretName: `/all/${stackName}/rabbitmq`,
       generateSecretString: {
         secretStringTemplate: JSON.stringify({ login: 'honeycomb' }),
         generateStringKey: 'password',

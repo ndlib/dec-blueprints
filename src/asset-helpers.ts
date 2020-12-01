@@ -15,8 +15,8 @@ export class AssetHelpers {
       // The returned image shouldn't matter, since adding the error will prevent the stack from deploying
       return ContainerImage.fromRegistry('scratch')
     } else {
-      const railsImageAsset = new DockerImageAsset(scope, id, props)
-      return ContainerImage.fromDockerImageAsset(railsImageAsset)
+      const dockerImageAsset = new DockerImageAsset(scope, id, props)
+      return ContainerImage.fromDockerImageAsset(dockerImageAsset)
     }
   }
 }

@@ -102,7 +102,7 @@ describe('RabbitMqConstruct', () => {
         GenerateStringKey: 'password',
         SecretStringTemplate: '{"login":"honeycomb"}',
       },
-      Name: `/all/${newStack.stackName}/secrets/rabbitmq`,
+      Name: `/all/${newStack.stackName}/rabbitmq`,
     }))
     expectCDK(newStack).to(haveResourceLike('AWS::AmazonMQ::Broker', {
       BrokerName: 'my-rabbit-broker-name',

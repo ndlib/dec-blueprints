@@ -1,12 +1,10 @@
-import { SharedServiceStackProps } from '../shared-stack-props'
 import { Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import {
   AwsLogDriver,
-  ContainerImage,
   FargatePlatformVersion,
   FargateService,
   FargateTaskDefinition,
-  Secret as ECSSecret,
+  Secret,
   Cluster,
 } from '@aws-cdk/aws-ecs'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
@@ -16,12 +14,12 @@ import { AssetHelpers } from '../asset-helpers'
 import { Construct, Duration, Fn, Stack } from '@aws-cdk/core'
 import { AdjustmentType } from '@aws-cdk/aws-applicationautoscaling'
 import { FileSystem } from '@aws-cdk/aws-efs'
-import { IGrantable } from '@aws-cdk/aws-iam'
 import { CustomEnvironment } from '../custom-environment'
 import { SolrConstruct } from './solr-construct'
 import { RabbitMqConstruct } from './rabbitmq-construct'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
+import { ECSSecretsHelper } from '../ecs-secrets-helpers'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 
 export interface RailsConstructProps {
@@ -100,15 +98,6 @@ export class RailsConstruct extends Construct {
       props.appSecurityGroup,
     ]
 
-    // Define a helper function to get all the parameters for the service, depending on the namespace
-    const secretsHelper = (task: string, key: string) => {
-      const secretParameter = StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
-        parameterName: `/all/${stackName}/${key}`,
-        version: 1,
-      })
-      return ECSSecret.fromSsmParameter(secretParameter)
-    }
-
     const logging = AwsLogDriver.awsLogs({
       logGroup: props.logs,
       streamPrefix: `${stackName}-ServiceTask`,
@@ -129,33 +118,23 @@ export class RailsConstruct extends Construct {
       RABBIT_VHOST: '/',
     }
     const railsSecrets = {
-      DB_PASSWORD: secretsHelper('RailsService', 'rds/password'),
-      DB_HOST: secretsHelper('RailsService', 'rds/host'),
-      DB_USERNAME: secretsHelper('RailsService', 'rds/username'),
-      DB_NAME: secretsHelper('RaisService', 'rds/database'),
-      OKTA_CLIENT_ID: secretsHelper('RailsService', 'secrets/okta/client_id'),
-      OKTA_CLIENT_SECRET: secretsHelper('RailsService', 'secrets/okta/client_secret'),
-      OKTA_LOGOUT_URL: secretsHelper('RailsService', 'secrets/okta/logout_url'),
-      OKTA_REDIRECT_URL: secretsHelper('RailsService', 'secrets/okta/redirect_url'),
-      OKTA_BASE_URL: secretsHelper('RailsService', 'secrets/okta/base_auth_url'),
-      OKTA_AUTH_ID: secretsHelper('RailsService', 'secrets/okta/auth_server_id'),
-      SECRET_KEY_BASE: secretsHelper('RailsService', 'secrets/secret_key_base'),
-      GOOGLE_CLIENT_ID: secretsHelper('RailsService', 'secrets/google/client_id'),
-      GOOGLE_CLIENT_SECRET: secretsHelper('RailsService', 'secrets/google/client_secret'),
-      GOOGLE_DEVELOPER_KEY: secretsHelper('RailsService', 'secrets/google/developer_key'),
-      GOOGLE_APP_ID: secretsHelper('RailsService', 'secrets/google/app_id'),
-      // TODO: Once https://github.com/aws/aws-cdk/issues/11341 is fixed
-      // change this to rabbitSecret.secretValueFromJson('login')
-      RABBIT_LOGIN: {
-        arn: `${props.rabbitMq.secret.secretArn}:login::`,
-        grantRead: (grantee: IGrantable) => props.rabbitMq.secret.grantRead(grantee),
-      },
-      // TODO: Once https://github.com/aws/aws-cdk/issues/11341 is fixed
-      // change this to rabbitSecret.secretValueFromJson('password')
-      RABBIT_PASSWORD: {
-        arn: `${props.rabbitMq.secret.secretArn}:password::`,
-        grantRead: (grantee: IGrantable) => props.rabbitMq.secret.grantRead(grantee),
-      },
+      DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/password'),
+      DB_HOST: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/host'),
+      DB_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/username'),
+      DB_NAME: ECSSecretsHelper.fromSSM(this, 'RaisService', 'rds/database'),
+      OKTA_CLIENT_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/client_id'),
+      OKTA_CLIENT_SECRET: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/client_secret'),
+      OKTA_LOGOUT_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/logout_url'),
+      OKTA_REDIRECT_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/redirect_url'),
+      OKTA_BASE_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/base_auth_url'),
+      OKTA_AUTH_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/auth_server_id'),
+      SECRET_KEY_BASE: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/secret_key_base'),
+      GOOGLE_CLIENT_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/client_id'),
+      GOOGLE_CLIENT_SECRET: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/client_secret'),
+      GOOGLE_DEVELOPER_KEY: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/developer_key'),
+      GOOGLE_APP_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/app_id'),
+      RABBIT_LOGIN: Secret.fromSecretsManager(props.rabbitMq.secret, 'login'),
+      RABBIT_PASSWORD: Secret.fromSecretsManager(props.rabbitMq.secret, 'password'),
     }
     const railsEfsVolumeName = 'rails'
 
