@@ -4,7 +4,7 @@ import { SynthUtils } from '@aws-cdk/assert'
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { IGrantable } from '@aws-cdk/aws-iam'
 import { HostedZone } from '@aws-cdk/aws-route53'
-import {  Secret } from '@aws-cdk/aws-secretsmanager'
+import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { Stack } from '@aws-cdk/core'
 
 export const mockHostedZoneFromLookup = (response?: any) => {
