@@ -9,7 +9,7 @@ import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string;
-  readonly appSourcePath: string;
+  readonly appDirectory: string;
   readonly env: CustomEnvironment;
   readonly foundationStack: FoundationStack;
 }
@@ -83,10 +83,8 @@ export class BeehiveStack extends cdk.Stack {
         ttl: cdk.Duration.minutes(15),
       })
     }
-//    const appSourcePath = "../beehive/build";
-
     new BucketDeployment(this, 'DeployWebsite', {
-      sources: [Source.asset(props.appSourcePath)],
+      sources: [Source.asset(props.appDirectory)],
       destinationBucket: webBucket,
       distribution: distribution,
     });
