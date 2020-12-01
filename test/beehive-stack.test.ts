@@ -1,8 +1,8 @@
-import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
+import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BeehiveStack } from '../lib/beehive-stack'
-import { FoundationStack } from '../lib/foundation-stack'
-import { getContextByNamespace } from '../lib/context-helpers'
+import { BeehiveStack } from '../src/beehive-stack'
+import { FoundationStack } from '../src/foundation-stack'
+import { getContextByNamespace } from '../src/context-helpers'
 
 describe('non-production infrastructure', () => {
   const stack = () => {

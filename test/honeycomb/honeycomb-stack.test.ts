@@ -1,18 +1,18 @@
 import { expect as expectCDK, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../../lib/foundation-stack'
-import { HoneycombStack } from '../../lib/honeycomb/honeycomb-stack'
+import { FoundationStack } from '../../src/foundation-stack'
+import { HoneycombStack } from '../../src/honeycomb/honeycomb-stack'
 import { mocked } from 'ts-jest/utils'
-import { SolrConstruct } from '../../lib/honeycomb/solr-construct'
-import { RabbitMqConstruct } from '../../lib/honeycomb/rabbitmq-construct'
-import { RailsConstruct } from '../../lib/honeycomb/rails-construct'
-import { CustomEnvironment } from '../../lib/custom-environment'
+import { SolrConstruct } from '../../src/honeycomb/solr-construct'
+import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
+import { RailsConstruct } from '../../src/honeycomb/rails-construct'
+import { CustomEnvironment } from '../../src/custom-environment'
 
-jest.mock('../../lib/honeycomb/solr-construct')
+jest.mock('../../src/honeycomb/solr-construct')
 const MockedSolrConstruct = mocked(SolrConstruct)
-jest.mock('../../lib/honeycomb/rabbitmq-construct')
+jest.mock('../../src/honeycomb/rabbitmq-construct')
 const MockedRabbitMqConstruct = mocked(RabbitMqConstruct)
-jest.mock('../../lib/honeycomb/rails-construct')
+jest.mock('../../src/honeycomb/rails-construct')
 const MockedRailsConstruct = mocked(RailsConstruct)
 
 describe('HoneycombStack', () => {

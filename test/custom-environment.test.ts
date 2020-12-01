@@ -1,5 +1,5 @@
 import { App } from '@aws-cdk/core'
-import { CustomEnvironment } from '../lib/custom-environment'
+import { CustomEnvironment } from '../src/custom-environment'
 
 describe('CustomEnvironment', () => {
   test('returns the correct object and adds the environment name', () => {
