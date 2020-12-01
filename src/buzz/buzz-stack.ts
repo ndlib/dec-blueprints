@@ -2,12 +2,10 @@ import * as cdk from '@aws-cdk/core'
 import {
   AwsLogDriver,
   Cluster,
-  ContainerImage,
   FargateService,
   FargateTaskDefinition,
   Secret,
 } from '@aws-cdk/aws-ecs'
-import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets'
 import { Peer, Port, SecurityGroup, SubnetType } from '@aws-cdk/aws-ec2'
 import { ApplicationListenerRule, ApplicationProtocol, ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
@@ -16,6 +14,7 @@ import { StringParameter } from '@aws-cdk/aws-ssm'
 import { CustomEnvironment } from '../custom-environment'
 import { SharedServiceStackProps } from '../shared-stack-props'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
+import { AssetHelpers } from './asset-helpers'
 
 export interface BuzzStackProps extends SharedServiceStackProps {
   readonly env: CustomEnvironment,
@@ -57,15 +56,14 @@ export class BuzzStack extends cdk.Stack {
       return Secret.fromSsmParameter(parameter)
     }
 
-    const railsDockerAsset = new DockerImageAsset(this, 'railsImageAsset', {
+    const railsDockerImage = AssetHelpers.containerFromDockerfile(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile',
     })
-
     const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
 
     const rails = appTaskDefinition.addContainer('RailsContainer', {
-      image: ContainerImage.fromDockerImageAsset(railsDockerAsset),
+      image: railsDockerImage,
       essential: true,
       logging,
       command: ['bash', 'docker/start_services.sh'],
