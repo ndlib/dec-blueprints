@@ -92,6 +92,10 @@ export class BeehivePipelineStack extends cdk.Stack {
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
+      appBuildCommands: [
+        `npm install`,
+        `npm run build`
+      ],
       namespace: testNamespace,
       additionalContext: {
         owner: props.owner,
@@ -100,7 +104,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
         "beehive:hostnamePrefix": testHostnamePrefix,
-//        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode/build',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
