@@ -20,7 +20,6 @@ describe('non-production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
@@ -169,7 +168,6 @@ describe('production infrastructure', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')
@@ -241,7 +239,6 @@ describe('do not create dns', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      oauthTokenPath: '/path/to/oauth',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
     const beehiveContext = getContextByNamespace('beehive')

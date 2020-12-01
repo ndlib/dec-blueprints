@@ -163,7 +163,6 @@ describe('CodePipeline', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      oauthTokenPath: '/path/to/oauth',
       dockerCredentialsPath: '/all/dockerhub/credentials',
     }
     const hostnamePrefix = 'buzz-test'
