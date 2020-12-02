@@ -36,9 +36,17 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
 };
 
 const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
+  deploy.project.addToRolePolicy(NamespacedPolicy.s3(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
+  deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
+  deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(namespace))
+  deploy.project.addToRolePolicy(NamespacedPolicy.globals([
+    GlobalActions.Cloudfront,   
+    GlobalActions.Route53,
+
+  ]))
 }
 
 export class BeehivePipelineStack extends cdk.Stack {
