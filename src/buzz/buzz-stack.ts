@@ -14,7 +14,7 @@ import { StringParameter } from '@aws-cdk/aws-ssm'
 import { CustomEnvironment } from '../custom-environment'
 import { SharedServiceStackProps } from '../shared-stack-props'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
-import { AssetHelpers } from './asset-helpers'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface BuzzStackProps extends SharedServiceStackProps {
   readonly env: CustomEnvironment,
