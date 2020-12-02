@@ -19,7 +19,7 @@
       "domainStackName": "library-domain",
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
-      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
+      "slackNotifyStackName": "slack-approval-bot-wse-approvals-notifier",
       "createGithubWebhooks": true
     }
   },

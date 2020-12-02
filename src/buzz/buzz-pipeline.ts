@@ -1,20 +1,18 @@
-import { Fn, Stack, SecretValue, RemovalPolicy } from '@aws-cdk/core'
-import { BuildSpec, BuildEnvironmentVariableType, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import { Fn, Stack } from '@aws-cdk/core'
+import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { BucketEncryption } from '@aws-cdk/aws-s3'
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
+import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { CDKPipelineMigrate } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import cdk = require('@aws-cdk/core')
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import s3 = require('@aws-cdk/aws-s3')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -54,17 +52,17 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.events(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
   deploy.project.addToRolePolicy(new PolicyStatement({
-    resources: [Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
+    resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
@@ -88,26 +86,26 @@ export class BuzzPipelineStack extends Stack {
   constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
-    const artifactBucket = new s3.Bucket(this, 'artifactBucket', {
+    const artifactBucket = new Bucket(this, 'artifactBucket', {
       encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     })
 
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode')
-    const appSourceAction = new codepipelineActions.GitHubSourceAction({
+    const appSourceArtifact = new Artifact('AppCode')
+    const appSourceAction = new GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
     })
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
-    const infraSourceAction = new codepipelineActions.GitHubSourceAction({
+    const infraSourceArtifact = new Artifact('InfraCode')
+    const infraSourceAction = new GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
@@ -182,7 +180,7 @@ export class BuzzPipelineStack extends Stack {
         }),
       },
     })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
+    const smokeTestsAction = new CodeBuildAction({
       input: appSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
@@ -246,15 +244,15 @@ export class BuzzPipelineStack extends Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
-    // if (props.slackNotifyStackName !== undefined) {
-    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
-    //     approvalTopic,
-    //     notifyStackName: props.slackNotifyStackName,
-    //   })
-    // }
+    if (props.slackNotifyStackName !== undefined) {
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.env.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
-    const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
+    const pipeline = new Pipeline(this, 'DeploymentPipeline', {
       artifactBucket,
       stages: [
         {
@@ -262,7 +260,7 @@ export class BuzzPipelineStack extends Stack {
           stageName: 'Source',
         },
         {
-          actions: [migrateTest.action, deployTest.action, smokeTestsAction],
+          actions: [migrateTest.action, deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
         {
