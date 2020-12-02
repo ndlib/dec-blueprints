@@ -32,8 +32,8 @@
   },
   "dependencies": {
     "@aws-cdk/aws-amazonmq": "^1.75.0",
-    "@aws-cdk/aws-codepipeline-actions": "^1.76.0",
-    "@aws-cdk/aws-s3-deployment": "^1.76.0",
+    "@aws-cdk/aws-codepipeline-actions": "^1.75.0",
+    "@aws-cdk/aws-s3-deployment": "^1.75.0",
     "@aws-cdk/core": "^1.75.0",
     "@ndlib/ndlib-cdk": "^1.5.0",
     "source-map-support": "^0.5.19"
