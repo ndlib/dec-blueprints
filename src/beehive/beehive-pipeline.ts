@@ -26,6 +26,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly qaSpecPath: string;
   readonly oauthTokenPath: string;
+  readonly hostnamePrefix: string;
   readonly dockerCredentialsPath: string;
   readonly networkStackName: string;
   readonly domainStackName: string;
@@ -54,8 +55,6 @@ export class BeehivePipelineStack extends cdk.Stack {
     super(scope, id, props);
 
     const repoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-//    const testUrl = `https://${props.testStack.fqdn}`;
-//    const prodUrl = `https://${props.prodStack.fqdn}`;
     
     const artifactBucket = new Bucket(this, 'artifactBucket', { 
       encryption: BucketEncryption.KMS_MANAGED, 
@@ -88,11 +87,21 @@ export class BeehivePipelineStack extends cdk.Stack {
     //Global variables for test space
     const testNamespace = `${props.namespace}-test`
     const testSsmPrefix = `dec-test-beehive`
-    
 
-    const testHostnamePrefix = 'beehive-test';
+    // Test Host variables
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
-    const testHost = `${testHostnamePrefix}.${resolvedDomain}`
+    const testURL = `${testHostnamePrefix}-${props.env.name}.${resolvedDomain}`
+    // const testHost = `${testHostnamePrefix}.${resolvedDomain}`
+
+    // Production Host variables
+    const prodHostnamePrefix = `${props.hostnamePrefix}`
+    const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
+    const prodURL = `${prodHostnamePrefix}-${props.env.name}.${resolvedDomain}`
+    //const prodHost = `${prodHostnamePrefix}.${resolvedProdDomain}`
+    
+    // Deploy Test actions
+
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-beehive`,
@@ -121,7 +130,6 @@ export class BeehivePipelineStack extends cdk.Stack {
     deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) 
 
     // Smoke Tests Action
-    const testURL = `${testHostnamePrefix}-${env}.${props.foundationStack.hostedZone.zoneName}`
     const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTests', {
       buildSpec: codebuild.BuildSpec.fromObject({
         phases: {
@@ -135,7 +143,9 @@ export class BeehivePipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman'),
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman',{
+            secretsManagerCredentials: dockerCredentials,
+        }),
       },
     })
 
@@ -151,90 +161,73 @@ export class BeehivePipelineStack extends cdk.Stack {
     const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to stack on up}.`,
-
- //     additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodHost}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     });
 
-
-    /*
-    const approvalTopic = new Topic(this, 'ApprovalTopic');
-    const approvalAction = new ManualApprovalAction({
-      actionName: 'Approval',
-      additionalInformation: `A new version of ${repoUrl} has been deployed and is awaiting your approval. If you approve these changes, they will be deployed `,
-      notificationTopic: approvalTopic,
-      runOrder: 99, // This should always be the last action in the stage
-    });
-    */
-
-//    additionalInformation: `A new version of ${repoUrl} has been deployed to ${testUrl} and is awaiting your approval. If you approve these changes, they will be deployed to ${prodUrl}.`,
-/*
     // Deploy Production Actions
-    const prodDeployProject = new CDKPipelineProject(this, 'ResearchAwardDeployProd', {
-      buildSpec: codebuild.BuildSpec.fromObject({
-        phases: {
-          install: {
-            commands: [
-              'cd $CODEBUILD_SRC_DIR_InfraCode',
-              'npm install',
-            ],
-            'runtime-versions': Runtime.NODEJS_10_X,
-          },
-          build: {
-            commands: [
-              'npm run build',
-              `npm run cdk deploy -- ${props.prodStack.stackName} \
-                --require-approval never --exclusively \
-                -c owner=${props.owner} -c contact=${props.contact} \
-                -c createDns=${props.createDns.toString()} -c domainStackName=${props.domainStackName} \
-                -c appSourcePath=$CODEBUILD_SRC_DIR/src`,
-            ]
-          },
-        },
-        version: '0.2',
-      }),
-      dependsOnStacks: [],
-      targetStack: props.prodStack,
-    });
-    this.addDeployPolicies(props.prodStack, prodDeployProject, props);
-    const prodDeployAction = new codepipelineActions.CodeBuildAction({
-      actionName: 'Deploy',
-      extraInputs: [infraSourceArtifact],
-      input: appSourceArtifact,
-      project: prodDeployProject,
-      runOrder: 1,
-    });
+    
+    //Global variables for production space
+    const prodNamespace = `${props.namespace}-prod`
+    const prodSsmPrefix = `dec-prod-beehive`
+    
+    // Deploy Prod actions
 
-    const smokeTestsProdProject = new codebuild.PipelineProject(this, 'ResearchAwardSmokeTestsProd', {
+    const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
+      contextEnvName: props.env.name,
+      targetStack: `${prodNamespace}-beehive`,
+      dockerCredentialsPath: props.dockerCredentialsPath,
+      dependsOnStacks: [],
+      infraSourceArtifact,
+      appSourceArtifact,
+      appBuildCommands: [
+        `npm install`,
+        `npm run build`
+      ],
+      namespace: prodNamespace,
+      additionalContext: {
+        owner: props.owner,
+        contact: props.contact,
+        networkStack: props.env.networkStackName,
+        domainStack: props.env.domainStackName,
+        createDns: props.env.createDns ? 'true' : 'false',
+        "beehive:hostnamePrefix": prodHostnamePrefix,
+        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode/build',
+        infraDirectory: '$CODEBUILD_SRC_DIR',
+      },
+    })
+    addPermissions(deployProd, prodNamespace)
+
+    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) 
+
+    // Smoke Tests Action
+    const smokeTestsProdProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsProd', {
       buildSpec: codebuild.BuildSpec.fromObject({
         phases: {
           build: {
             commands: [
-              `BaseURL='${prodUrl}' python spec/chrome_spec.py`,
+              `chmod -R 755 ${props.qaSpecPath}`,
+              `newman run ${props.qaSpecPath} --env-var SiteURL=${prodURL}`,
             ],
-            'run-as': 'seluser',
-          },
-          install: {
-            commands: [
-              'apt-get update && apt-get -y install python-pip && pip install selenium',
-            ]
           },
         },
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('selenium/standalone-chrome'),
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman',{
+            secretsManagerCredentials: dockerCredentials,
+        }),
       },
-    });
+    })
+
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact, 
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,
     });
-*/
+
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
       artifactBucket,
@@ -245,13 +238,13 @@ export class BeehivePipelineStack extends cdk.Stack {
         },
         {
 //          actions: [testDeployAction, smokeTestsAction, approvalAction],
-          actions: [deployTest.action, smokeTestsAction],
+          actions: [deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
-//        {
-//          actions: [prodDeployAction, smokeTestsProdAction],
-//          stageName: 'Production',
-//        },
+        {
+          actions: [deployProd.action, smokeTestsProdAction],
+          stageName: 'Production',
+        },
       ],
     });
 /*
