@@ -47,6 +47,7 @@
   "beehive:infraSourceBranch": "beehive-pipe",
   "beehive:owner": "wse",
   "beehive:contact": "web-and-software-engineering-group@nd.edu",
+  "beehive:qaSpecPath": "spec/postman/collection.json",
   "honeypot:hostnamePrefix": "honeypot",
   "honeypot:appRepoOwner": "ndlib",
   "honeypot:appRepoName": "honeypot",
