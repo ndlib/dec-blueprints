@@ -83,6 +83,12 @@ export class BeehiveStack extends cdk.Stack {
         ttl: cdk.Duration.minutes(15),
       })
     }
+
+    new cdk.CfnOutput(this, 'DistributionDomainName', {
+      value: this.hostname,
+      description: 'The server hostname distribution domain name.'
+    });
+
     new BucketDeployment(this, 'DeployWebsite', {
       sources: [Source.asset(props.appDirectory)],
       destinationBucket: webBucket,
