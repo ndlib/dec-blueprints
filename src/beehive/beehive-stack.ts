@@ -84,7 +84,7 @@ export class BeehiveStack extends cdk.Stack {
       })
     }
 
-    new cdk.CfnOutput(this, 'DistributionDomainName', {
+    new cdk.CfnOutput(this, 'Hostname', {
       value: this.hostname,
       description: 'The server hostname distribution domain name.'
     });
