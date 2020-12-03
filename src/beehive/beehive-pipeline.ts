@@ -3,9 +3,9 @@ import codepipeline = require('@aws-cdk/aws-codepipeline');
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
 import { Secret } from '@aws-cdk/aws-secretsmanager';
+import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns';
 import cdk = require('@aws-cdk/core');
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions';
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core';
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
@@ -13,6 +13,7 @@ import { Runtime } from '@aws-cdk/aws-lambda';
 import { FoundationStack } from '../foundation-stack';
 import { CustomEnvironment } from '../custom-environment';
 import { PipelineNotifications } from '@ndlib/ndlib-cdk';
+import { env } from 'process';
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -23,6 +24,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly infraRepoName: string;
   readonly infraSourceBranch: string;
   readonly namespace: string;
+  readonly qaSpecPath: string;
   readonly oauthTokenPath: string;
   readonly dockerCredentialsPath: string;
   readonly networkStackName: string;
@@ -41,11 +43,9 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
-  deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
     GlobalActions.Cloudfront,   
     GlobalActions.Route53,
-
   ]))
 }
 
@@ -117,37 +117,28 @@ export class BeehivePipelineStack extends cdk.Stack {
       },
     })
     addPermissions(deployTest, testNamespace)
-    /*
-    const testDeployAction = new codepipelineActions.CodeBuildAction({
-      actionName: 'Deploy',
-      extraInputs: [infraSourceArtifact],
-      input: appSourceArtifact,
-      project: testDeployProject,
-      runOrder: 1,
-    });
-*/
+
+    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) 
+
     // Smoke Tests Action
-/*    const smokeTestsProject = new codebuild.PipelineProject(this, 'ResearchAwardSmokeTests', {
+    const testURL = `${testHostnamePrefix}-${env}.${props.foundationStack.hostedZone.zoneName}`
+    const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTests', {
       buildSpec: codebuild.BuildSpec.fromObject({
         phases: {
           build: {
             commands: [
-              `BaseURL='${testUrl}' python spec/chrome_spec.py`,
+              `chmod -R 755 ${props.qaSpecPath}`,
+              `newman run ${props.qaSpecPath} --env-var SiteURL=${testURL}`,
             ],
-            'run-as': 'seluser',
-          },
-          install: {
-            commands: [
-              'apt-get update && apt-get -y install python-pip && pip install selenium',
-            ]
           },
         },
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('selenium/standalone-chrome'),
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman'),
       },
-    });
+    })
+
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
       input: appSourceArtifact, 
       project: smokeTestsProject,
@@ -155,8 +146,20 @@ export class BeehivePipelineStack extends cdk.Stack {
       runOrder: 98,
     });
 
-*/
     // Approval
+    const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
+    const approvalTopic = new Topic(this, 'ApprovalTopic')
+    const approvalAction = new ManualApprovalAction({
+      actionName: 'Approval',
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to stack on up}.`,
+
+ //     additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testHost} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodHost}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
+      notificationTopic: approvalTopic,
+      runOrder: 99, // This should always be the last action in the stage
+    });
+
+
+    /*
     const approvalTopic = new Topic(this, 'ApprovalTopic');
     const approvalAction = new ManualApprovalAction({
       actionName: 'Approval',
@@ -164,9 +167,9 @@ export class BeehivePipelineStack extends cdk.Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     });
+    */
 
 //    additionalInformation: `A new version of ${repoUrl} has been deployed to ${testUrl} and is awaiting your approval. If you approve these changes, they will be deployed to ${prodUrl}.`,
-
 /*
     // Deploy Production Actions
     const prodDeployProject = new CDKPipelineProject(this, 'ResearchAwardDeployProd', {
@@ -242,7 +245,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         },
         {
 //          actions: [testDeployAction, smokeTestsAction, approvalAction],
-          actions: [deployTest.action],
+          actions: [deployTest.action, smokeTestsAction],
           stageName: 'Test',
         },
 //        {
