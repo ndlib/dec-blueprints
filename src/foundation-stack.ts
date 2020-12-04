@@ -1,5 +1,5 @@
 import * as cdk from '@aws-cdk/core'
-import { Bucket, BucketAccessControl } from '@aws-cdk/aws-s3'
+import { Bucket, BucketAccessControl, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-certificatemanager'
 import { Vpc } from '@aws-cdk/aws-ec2'
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
@@ -17,6 +17,7 @@ export interface FoundationStackProps extends cdk.StackProps {
 export class FoundationStack extends cdk.Stack {
   public readonly vpc: Vpc
   public readonly logBucket: Bucket
+  public readonly artifactBucket: Bucket
   public readonly certificate: ICertificate
   public readonly hostedZone: IHostedZone
   public readonly logs: LogGroup
@@ -89,6 +90,11 @@ export class FoundationStack extends cdk.Stack {
       vpc: this.vpc,
       name: this.stackName,
       description: 'Private Namespace for DEC',
+    })
+
+    this.artifactBucket = new Bucket(this, 'artifactBucket', {
+      encryption: BucketEncryption.KMS_MANAGED,
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
     })
   }
 }

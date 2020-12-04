@@ -8,10 +8,11 @@ import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-
 import { Topic } from '@aws-cdk/aws-sns'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { CDKPipelineMigrate } from '../cdk-pipeline-migrate'
+import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
+import { DockerhubImage } from '../dockerhub-image'
 import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
@@ -24,7 +25,7 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly infraSourceBranch: string;
   readonly namespace: string;
   readonly oauthTokenPath: string;
-  readonly dockerCredentialsPath: string;
+  readonly dockerhubCredentialsPath: string;
   readonly networkStackName: string;
   readonly domainStackName: string;
   readonly owner: string;
@@ -86,11 +87,6 @@ export class BuzzPipelineStack extends Stack {
   constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
-    const artifactBucket = new Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    })
-
     // Source Actions
     const appSourceArtifact = new Artifact('AppCode')
     const appSourceAction = new GitHubSourceAction({
@@ -112,17 +108,17 @@ export class BuzzPipelineStack extends Stack {
     })
 
     // Global variables for pipeline
-    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
+    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
     const testSsmPrefix = 'dec-test-buzz'
 
     // Database Migration Test
-    const migrateTest = new CDKPipelineMigrate(this, `${props.namespace}-MigrateTest`, {
+    const migrateTest = new RailsMigration(this, `${props.namespace}-MigrateTest`, {
       contextEnvName: props.env.name,
       namespace: testNamespace,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       appSourceArtifact,
       ssmPrefix: testSsmPrefix,
       foundationStack: props.foundationStack,
@@ -145,7 +141,7 @@ export class BuzzPipelineStack extends Stack {
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-buzz`,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
@@ -175,9 +171,7 @@ export class BuzzPipelineStack extends Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman', {
-          secretsManagerCredentials: dockerCredentials,
-        }),
+        buildImage: DockerhubImage.fromNewman(this, 'BuzzSmokeTestsImage', 'dockerhubCredentialsPath'),
       },
     })
     const smokeTestsAction = new CodeBuildAction({
@@ -192,10 +186,10 @@ export class BuzzPipelineStack extends Stack {
     const prodSsmPrefix = 'dec-prod-buzz'
 
     // Database Migration Test
-    const migrateProd = new CDKPipelineMigrate(this, `${props.namespace}-MigrateProd`, {
+    const migrateProd = new RailsMigration(this, `${props.namespace}-MigrateProd`, {
       contextEnvName: props.env.name,
       namespace: prodNamespace,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       appSourceArtifact,
       ssmPrefix: prodSsmPrefix,
       foundationStack: props.foundationStack,
@@ -218,7 +212,7 @@ export class BuzzPipelineStack extends Stack {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-buzz`,
       dependsOnStacks: [],
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       infraSourceArtifact,
       appSourceArtifact,
       namespace: prodNamespace,
@@ -253,7 +247,7 @@ export class BuzzPipelineStack extends Stack {
 
     // Pipeline
     const pipeline = new Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+      artifactBucket: props.foundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],

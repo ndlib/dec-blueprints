@@ -30,7 +30,7 @@
   "projectName": "dec",
   "description": "Infrastructure for DEC project",
   "oauthTokenPath": "/all/github/ndlib-git",
-  "dockerCredentialsPath": "/all/dockerhub/credentials",
+  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",

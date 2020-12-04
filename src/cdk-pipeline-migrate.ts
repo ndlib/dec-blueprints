@@ -30,7 +30,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
     /**
      * The path to the Secrets Manager secret to allow authenticated Docker logins
      */
-    readonly dockerCredentialsPath: string
+    readonly dockerhubCredentialsPath: string
 
     /**
      * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
@@ -42,7 +42,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
     readonly foundationStack: FoundationStack
   }
 
-export class CDKPipelineMigrate extends Construct {
+export class RailsMigration extends Construct {
     public readonly project: PipelineProject
     public readonly action: CodeBuildAction
 
@@ -74,7 +74,7 @@ export class CDKPipelineMigrate extends Construct {
         ],
         environment: {
           buildImage: LinuxBuildImage.fromDockerRegistry('ruby:2.4.4', {
-            secretsManagerCredentials: Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath),
+            secretsManagerCredentials: Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath),
           }),
           privileged: true,
         },
@@ -138,18 +138,6 @@ export class CDKPipelineMigrate extends Construct {
       this.project.addToRolePolicy(new PolicyStatement({
         actions: ['cloudformation:DescribeStacks'],
         resources: [Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/CDKToolkit/*')],
-      }))
-      this.project.addToRolePolicy(new PolicyStatement({
-        // TODO: Is there a way to get the bucket name?
-        actions: [
-          's3:ListBucket',
-          's3:GetObject',
-          's3:PutObject',
-          's3:ListBucketVersions',
-          's3:GetBucketLocation',
-          's3:GetBucketPolicy',
-        ],
-        resources: ['arn:aws:s3:::cdktoolkit-stagingbucket-*'],
       }))
 
       this.action = new CodeBuildAction({

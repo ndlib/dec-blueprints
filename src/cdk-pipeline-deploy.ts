@@ -50,7 +50,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
-  readonly dockerCredentialsPath: string
+  readonly dockerhubCredentialsPath: string
 
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`

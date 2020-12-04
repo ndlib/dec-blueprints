@@ -10,7 +10,10 @@ describe('CodeBuild actions', () => {
     helpers.mockDockerCredentials()
   })
   const stack = () => {
+    // Like this maybe?
+    process.env.CDK_CONTEXT_JSON = JSON.stringify({ dockerhubCredentialsPath: '/path/to/oauth' })
     const app = new cdk.App()
+    // app.node.setContext('dockerhubCredentialsPath', '/path/to/oauth')
     // WHEN
     const env = {
       name: 'test',
@@ -26,7 +29,6 @@ describe('CodeBuild actions', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      dockerCredentialsPath: '/all/dockerhub/credentials',
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
@@ -100,7 +102,7 @@ describe('CodeBuild actions', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
-        Image: 'postman/newman',
+        Image: 'postman/newman:5',
         RegistryCredential: {
           Credential: 'test-secret',
           CredentialProvider: 'SECRETS_MANAGER',
@@ -163,7 +165,6 @@ describe('CodePipeline', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
-      dockerCredentialsPath: '/all/dockerhub/credentials',
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
@@ -179,6 +180,7 @@ describe('CodePipeline', () => {
       ssmPrefix: 'ssmPrefix',
       appSourceArtifact: 'testAppArtifact',
       migrateSecurityGroup: 'sg-123456',
+      dockerhubCredentialsPath: '/path/to/credentials',
     })
   }
   test('creates a CodePipeline with Source, Test, and Production stages', () => {
@@ -370,85 +372,3 @@ describe('CodePipeline', () => {
     }))
   })
 })
-
-//   test('creates ELB Listener with proper header', () => {
-//     const newStack = stack()
-//     expectCDK(newStack).to(haveResourceLike('AWS::ElasticLoadBalancingV2::ListenerRule', {
-//       Conditions: [
-//         {
-//           Field: 'host-header',
-//           Values: [
-//             {
-//               'Fn::Join': [
-//                 '',
-//                 [
-//                   'buzz-test.',
-//                   {
-//                     'Fn::ImportValue': 'test-edu-domain:DomainName',
-//                   },
-//                 ],
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//     }))
-//   })
-// })
-
-// describe('production infrastructure', () => {
-//   const stack = () => {
-//     const app = new cdk.App()
-//     // WHEN
-//     const env = {
-//       name: 'prod',
-//       domainName: 'test.edu',
-//       domainStackName: 'test-edu-domain',
-//       networkStackName: 'test-network',
-//       region: 'test-region',
-//       account: 'test-account',
-//       createDns: true,
-//       useVpcId: '123456',
-//       slackNotifyStackName: 'slack-test',
-//       createGithubWebhooks: false,
-//       useExistingDnsZone: false,
-//       notificationReceivers: 'test@test.edu',
-//       alarmsEmail: 'test@test.edu',
-//       oauthTokenPath: '/path/to/oauth',
-//     }
-//     const buzzContext = getContextByNamespace('buzz')
-//     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
-//     return new BuzzPipelineStack(app, 'MyBuzzStack', {
-//       env,
-//       name: 'prod',
-//       hostnamePrefix: 'buzz',
-//       foundationStack,
-//       appDirectory: 'test/fixtures',
-//       ...buzzContext,
-//     })
-//   }
-
-//   // Check for expected resources with desired configuration
-//   test('creates ELB Listener with proper header', () => {
-//     const newStack = stack()
-//     expectCDK(newStack).to(haveResourceLike('AWS::ElasticLoadBalancingV2::ListenerRule', {
-//       Conditions: [
-//         {
-//           Field: 'host-header',
-//           Values: [
-//             {
-//               'Fn::Join': [
-//                 '',
-//                 [
-//                   'buzz.',
-//                   {
-//                     'Fn::ImportValue': 'test-edu-domain:DomainName',
-//                   },
-//                 ],
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//     }))
-//   })

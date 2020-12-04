@@ -10,7 +10,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const infraRepoName = app.node.tryGetContext('infraRepoName')
   const infraRepoOwner = app.node.tryGetContext('infraRepoOwner')
   const infraSourceBranch = app.node.tryGetContext('infraSourceBranch')
-  const dockerCredentialsPath = app.node.tryGetContext('dockerCredentialsPath')
+  const dockerhubCredentialsPath = app.node.tryGetContext('dockerhubCredentialsPath')
   const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 
   const commonProps = {
@@ -19,7 +19,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     infraRepoOwner: infraRepoOwner,
     infraRepoName: infraRepoName,
     infraSourceBranch: infraSourceBranch,
-    dockerCredentialsPath: dockerCredentialsPath,
+    dockerhubCredentialsPath: dockerhubCredentialsPath,
     oauthTokenPath: oauthTokenPath,
   }
 
