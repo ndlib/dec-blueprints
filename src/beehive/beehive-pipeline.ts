@@ -237,7 +237,6 @@ export class BeehivePipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-          //          actions: [testDeployAction, smokeTestsAction, approvalAction],
           actions: [deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
@@ -247,33 +246,5 @@ export class BeehivePipelineStack extends cdk.Stack {
         },
       ],
     })
-    /*
-    new PipelineNotifications(this, 'PipelineNotifications', {
-      pipeline,
-      receivers: props.pipelineNotificationReceivers,
-    });
-*/
-
-    // Add exports to make it easier to attach slack approvals to this pipeline
-    new CfnOutput(this, 'PipelineName', {
-      value: pipeline.pipelineName,
-      description: 'Name of the pipeline.',
-      exportName: `${this.stackName}:PipelineName`,
-    })
-    new CfnOutput(this, 'ApprovalTopicArn', {
-      value: approvalTopic.topicArn,
-      description: 'ARN of the SNS topic for the Approval action.',
-      exportName: `${this.stackName}:ApprovalTopicArn`,
-    })
   }
-
-//  addDeployPolicies(stack: Stack, project: CDKPipelineProject, props: IDeploymentPipelineStackProps) : void {
-//    project.addToRolePolicy(NamespacedPolicy.globals(GlobalActions.S3 | GlobalActions.Cloudfront));
-//    project.addToRolePolicy(NamespacedPolicy.iamRole(stack));
-//    project.addToRolePolicy(NamespacedPolicy.lambda(stack));
-//    project.addToRolePolicy(NamespacedPolicy.s3(stack));
-//    if(props.createDns) {
-//      project.addToRolePolicy(NamespacedPolicy.route53RecordSet(Fn.importValue(`${props.domainStackName}:Zone`)));
-//    };
-//  }
 }
