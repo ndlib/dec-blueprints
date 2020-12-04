@@ -134,12 +134,6 @@ export class RailsMigration extends Construct {
         resources: ['*'],
       }))
 
-      // Add permissions to read CDK bootstrap stack/bucket
-      this.project.addToRolePolicy(new PolicyStatement({
-        actions: ['cloudformation:DescribeStacks'],
-        resources: [Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/CDKToolkit/*')],
-      }))
-
       this.action = new CodeBuildAction({
         actionName: 'DBMigrate',
         input: props.appSourceArtifact,
