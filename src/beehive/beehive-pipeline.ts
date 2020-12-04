@@ -1,19 +1,19 @@
-import codebuild = require('@aws-cdk/aws-codebuild');
-import codepipeline = require('@aws-cdk/aws-codepipeline');
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions');
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3';
-import { Secret } from '@aws-cdk/aws-secretsmanager';
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
+import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
-import { Topic } from '@aws-cdk/aws-sns';
-import cdk = require('@aws-cdk/core');
-import { CfnOutput, Fn, Stack } from '@aws-cdk/core';
-import { CDKPipelineDeploy } from '../cdk-pipeline-deploy';
-import { NamespacedPolicy, GlobalActions } from '../namespaced-policy';
-import { Runtime } from '@aws-cdk/aws-lambda';
-import { FoundationStack } from '../foundation-stack';
-import { CustomEnvironment } from '../custom-environment';
-import { PipelineNotifications } from '@ndlib/ndlib-cdk';
-import { env } from 'process';
+import { Topic } from '@aws-cdk/aws-sns'
+import { CfnOutput, Fn, Stack } from '@aws-cdk/core'
+import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
+import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
+import { Runtime } from '@aws-cdk/aws-lambda'
+import { FoundationStack } from '../foundation-stack'
+import { CustomEnvironment } from '../custom-environment'
+import { PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { env } from 'process'
+import codebuild = require('@aws-cdk/aws-codebuild')
+import codepipeline = require('@aws-cdk/aws-codepipeline')
+import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
+import cdk = require('@aws-cdk/core')
 
 export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -36,7 +36,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
   readonly foundationStack: FoundationStack;
-};
+}
 
 const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.s3(namespace))
@@ -45,61 +45,61 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
-    GlobalActions.Cloudfront,   
+    GlobalActions.Cloudfront,
     GlobalActions.Route53,
   ]))
 }
 
 export class BeehivePipelineStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
-    super(scope, id, props);
+  constructor (scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+    super(scope, id, props)
 
-    const repoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`;
-    
-    const artifactBucket = new Bucket(this, 'artifactBucket', { 
-      encryption: BucketEncryption.KMS_MANAGED, 
+    const repoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
+
+    const artifactBucket = new Bucket(this, 'artifactBucket', {
+      encryption: BucketEncryption.KMS_MANAGED,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    })
 
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode');
+    const appSourceArtifact = new codepipeline.Artifact('AppCode')
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'AppCode',
-        branch: props.appSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
-        output: appSourceArtifact,
-        owner: props.appRepoOwner,
-        repo: props.appRepoName,
-    });
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode');
+      actionName: 'AppCode',
+      branch: props.appSourceBranch,
+      oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      output: appSourceArtifact,
+      owner: props.appRepoOwner,
+      repo: props.appRepoName,
+    })
+    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
-        actionName: 'InfraCode',
-        branch: props.infraSourceBranch,
-        oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
-        output: infraSourceArtifact,
-        owner: props.infraRepoOwner,
-        repo: props.infraRepoName,
-    });
+      actionName: 'InfraCode',
+      branch: props.infraSourceBranch,
+      oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      output: infraSourceArtifact,
+      owner: props.infraRepoOwner,
+      repo: props.infraRepoName,
+    })
 
-    //Global variables for pipeline
+    // Global variables for pipeline
     const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
 
-    //Global variables for test space
+    // Global variables for test space
     const testNamespace = `${props.namespace}-test`
-    const testSsmPrefix = `dec-test-beehive`
+    const testSsmPrefix = 'dec-test-beehive'
 
     // Test Host variables
     const testHostnamePrefix = `${props.hostnamePrefix}-prep`
-    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
+    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testURL = `${testHostnamePrefix}-${props.env.name}.${resolvedDomain}`
     // const testHost = `${testHostnamePrefix}.${resolvedDomain}`
 
     // Production Host variables
     const prodHostnamePrefix = `${props.hostnamePrefix}`
-    const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`);
+    const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const prodURL = `${prodHostnamePrefix}-${props.env.name}.${resolvedDomain}`
-    //const prodHost = `${prodHostnamePrefix}.${resolvedProdDomain}`
-    
+    // const prodHost = `${prodHostnamePrefix}.${resolvedProdDomain}`
+
     // Deploy Test actions
 
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
@@ -110,8 +110,8 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        `npm install`,
-        `npm run build`
+        'npm install',
+        'npm run build',
       ],
       namespace: testNamespace,
       additionalContext: {
@@ -120,14 +120,14 @@ export class BeehivePipelineStack extends cdk.Stack {
         networkStack: props.env.networkStackName,
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
-        "beehive:hostnamePrefix": testHostnamePrefix,
-        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode/build',
+        'beehive:hostnamePrefix': testHostnamePrefix,
+        'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
     addPermissions(deployTest, testNamespace)
 
-    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) 
+    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
     const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTests', {
@@ -143,18 +143,18 @@ export class BeehivePipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman',{
-            secretsManagerCredentials: dockerCredentials,
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
+          secretsManagerCredentials: dockerCredentials,
         }),
       },
     })
 
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact, 
+      input: appSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
-    });
+    })
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -164,14 +164,14 @@ export class BeehivePipelineStack extends cdk.Stack {
       additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
-    });
+    })
 
     // Deploy Production Actions
-    
-    //Global variables for production space
+
+    // Global variables for production space
     const prodNamespace = `${props.namespace}-prod`
-    const prodSsmPrefix = `dec-prod-beehive`
-    
+    const prodSsmPrefix = 'dec-prod-beehive'
+
     // Deploy Prod actions
 
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
@@ -182,8 +182,8 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        `npm install`,
-        `npm run build`
+        'npm install',
+        'npm run build',
       ],
       namespace: prodNamespace,
       additionalContext: {
@@ -192,14 +192,14 @@ export class BeehivePipelineStack extends cdk.Stack {
         networkStack: props.env.networkStackName,
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
-        "beehive:hostnamePrefix": prodHostnamePrefix,
-        "beehive:appDirectory": '$CODEBUILD_SRC_DIR_AppCode/build',
+        'beehive:hostnamePrefix': prodHostnamePrefix,
+        'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
     addPermissions(deployProd, prodNamespace)
 
-    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId)) 
+    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
     const smokeTestsProdProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsProd', {
@@ -215,18 +215,18 @@ export class BeehivePipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman',{
-            secretsManagerCredentials: dockerCredentials,
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
+          secretsManagerCredentials: dockerCredentials,
         }),
       },
     })
 
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact, 
+      input: appSourceArtifact,
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,
-    });
+    })
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
@@ -237,7 +237,7 @@ export class BeehivePipelineStack extends cdk.Stack {
           stageName: 'Source',
         },
         {
-//          actions: [testDeployAction, smokeTestsAction, approvalAction],
+          //          actions: [testDeployAction, smokeTestsAction, approvalAction],
           actions: [deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
@@ -246,8 +246,8 @@ export class BeehivePipelineStack extends cdk.Stack {
           stageName: 'Production',
         },
       ],
-    });
-/*
+    })
+    /*
     new PipelineNotifications(this, 'PipelineNotifications', {
       pipeline,
       receivers: props.pipelineNotificationReceivers,
@@ -259,12 +259,12 @@ export class BeehivePipelineStack extends cdk.Stack {
       value: pipeline.pipelineName,
       description: 'Name of the pipeline.',
       exportName: `${this.stackName}:PipelineName`,
-    });
+    })
     new CfnOutput(this, 'ApprovalTopicArn', {
       value: approvalTopic.topicArn,
       description: 'ARN of the SNS topic for the Approval action.',
       exportName: `${this.stackName}:ApprovalTopicArn`,
-    });
+    })
   }
 
 //  addDeployPolicies(stack: Stack, project: CDKPipelineProject, props: IDeploymentPipelineStackProps) : void {
