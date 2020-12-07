@@ -165,6 +165,12 @@ export class BeehivePipelineStack extends cdk.Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
+    // if (props.slackNotifyStackName !== undefined) {
+    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
+    //     approvalTopic,
+    //     notifyStackName: props.slackNotifyStackName,
+    //   })
+    // }
 
     // Deploy Production Actions
 
