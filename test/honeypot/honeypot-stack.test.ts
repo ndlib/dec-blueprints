@@ -3,7 +3,6 @@ import * as cdk from '@aws-cdk/core'
 import { HoneypotStack } from '../../lib/honeypot/honeypot-stack'
 import { FoundationStack } from '../../lib/foundation-stack'
 import { getContextByNamespace } from '../../lib/context-helpers'
-import { CustomEnvironment } from '../../lib/custom-environment'
 
 describe('Production stack infrastructure', () => {
   const stack = () => {
