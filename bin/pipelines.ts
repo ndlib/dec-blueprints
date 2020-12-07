@@ -5,6 +5,8 @@ import { getContextByNamespace } from '../src/context-helpers'
 import { FoundationStack } from '../src/foundation-stack'
 import { BuzzStack } from '../src/buzz/buzz-stack'
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
+import { HoneypotStack } from '../src/honeypot/honeypot-stack'
+import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
@@ -27,6 +29,15 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...commonProps,
   })
 
+  const honeypotContext = getContextByNamespace('honeypot')
+  const honeypotPipelineStack = new HoneypotPipelineStack(app, `${namespace}-honeypot-pipeline`, {
+    foundationStack,
+    testStack: testStacks.HoneypotStack,
+    prodStack: prodStacks.HoneypotStack,
+    ...commonProps,
+    ...honeypotContext,
+  })
+
   const buzzContext = getContextByNamespace('buzz')
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {
     foundationStack,
@@ -35,5 +46,5 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...commonProps,
     ...buzzContext,
   })
-  return { buzzPipelineStack }
+  return { honeypotPipelineStack, buzzPipelineStack }
 }
