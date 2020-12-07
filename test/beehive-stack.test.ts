@@ -190,6 +190,25 @@ describe('production infrastructure', () => {
     }))
   })
 
+  test('creates an Origin Access Identity for CloudFront', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::CloudFront::CloudFrontOriginAccessIdentity', {
+      CloudFrontOriginAccessIdentityConfig: {
+        Comment: {
+          'Fn::Join': [
+            '',
+            [
+              'Static Assets in ',
+              {
+                Ref: 'beehiveBucket45D50636',
+              },
+            ],
+          ],
+        },
+      },
+    }))
+  })
+
   test('creates a CloudFront distribution with proper alias', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
@@ -207,6 +226,20 @@ describe('production infrastructure', () => {
             ],
           },
         ],
+      },
+    }))
+  })
+
+  test('CloudFront distribution gets proper ACM certificate', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        ViewerCertificate: {
+          AcmCertificateArn: {
+            'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
+          },
+          SslSupportMethod: 'sni-only',
+        },
       },
     }))
   })
