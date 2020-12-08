@@ -10,7 +10,6 @@ describe('CodeBuild actions', () => {
     helpers.mockDockerCredentials()
   })
   const stack = () => {
-    // Like this maybe?
     process.env.CDK_CONTEXT_JSON = JSON.stringify({ dockerhubCredentialsPath: '/path/to/oauth' })
     const app = new cdk.App()
     // WHEN
