@@ -60,10 +60,10 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + `${namespace}-` + '*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + `${namespace}-` +'*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + `${namespace}-` + '*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + `${namespace}-` + '*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
@@ -112,7 +112,6 @@ export class HoneypotPipelineStack extends Stack {
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
-    const testSsmPrefix = 'dec-test-honeypot'
 
     // CDK Deploy Test
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
@@ -163,7 +162,6 @@ export class HoneypotPipelineStack extends Stack {
 
     // Global variables for test space
     const prodNamespace = `${props.namespace}-prod`
-    const prodSsmPrefix = 'dec-prod-honeypot'
 
     // CDK Deploy Prod
     const prodHostnamePrefix = 'honeypot'
