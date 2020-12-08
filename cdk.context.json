@@ -34,7 +34,7 @@
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
-  "infraSourceBranch": "main",
+  "infraSourceBranch": "ESU-1466-honeypot-cdk",
   "beehive:hostnamePrefix": "collections",
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
