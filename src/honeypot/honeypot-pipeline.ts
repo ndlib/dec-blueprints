@@ -227,7 +227,7 @@ export class HoneypotPipelineStack extends Stack {
         'ssm:GetParameter',
       ],
       resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/honeypot/sg_database_connect`),
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/dec-honeypot/secret_key_base`),
       ],
     }))
 
