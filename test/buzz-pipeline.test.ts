@@ -13,7 +13,6 @@ describe('CodeBuild actions', () => {
     // Like this maybe?
     process.env.CDK_CONTEXT_JSON = JSON.stringify({ dockerhubCredentialsPath: '/path/to/oauth' })
     const app = new cdk.App()
-    // app.node.setContext('dockerhubCredentialsPath', '/path/to/oauth')
     // WHEN
     const env = {
       name: 'test',
