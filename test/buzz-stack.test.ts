@@ -1,8 +1,8 @@
 import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BuzzStack } from '../lib/buzz-stack'
-import { getContextByNamespace } from '../lib/context-helpers'
-import { FoundationStack } from '../lib/foundation-stack'
+import { BuzzStack } from '../src/buzz/buzz-stack'
+import { getContextByNamespace } from '../src/context-helpers'
+import { FoundationStack } from '../src/foundation-stack'
 
 describe('non-production infrastructure', () => {
   const stack = () => {

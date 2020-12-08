@@ -19,7 +19,7 @@
       "domainStackName": "library-domain",
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
-      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
+      "slackNotifyStackName": "slack-approval-bot-wse-approvals-notifier",
       "createGithubWebhooks": true
     }
   },
@@ -30,6 +30,7 @@
   "projectName": "dec",
   "description": "Infrastructure for DEC project",
   "oauthTokenPath": "/all/github/ndlib-git",
+  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",

@@ -2,7 +2,9 @@ import { SynthUtils } from '@aws-cdk/assert'
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import { IGrantable } from '@aws-cdk/aws-iam'
 import { HostedZone } from '@aws-cdk/aws-route53'
+import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { Stack } from '@aws-cdk/core'
 
 export const mockHostedZoneFromLookup = (response?: any) => {
@@ -16,6 +18,17 @@ export const mockHostedZoneFromLookup = (response?: any) => {
   })
 }
 
+export const mockDockerCredentials = (response?: any) => {
+  jest.mock('@aws-cdk/aws-secretsmanager')
+  const mockCredentialsFromLookup = jest.spyOn(Secret, 'fromSecretNameV2')
+  mockCredentialsFromLookup.mockImplementation((scope, id, query) => {
+    return response ?? {
+      secretName: 'test-secret',
+      grantRead: (grantee: IGrantable) => (grantee),
+    }
+  },
+  )
+}
 /**
  * Synthesizes the given stack in test and returns the properties for the given
  * logical id.

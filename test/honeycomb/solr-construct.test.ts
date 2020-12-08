@@ -2,8 +2,8 @@ import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/as
 import * as cdk from '@aws-cdk/core'
 import { RemovalPolicy, Stack } from '@aws-cdk/core'
 import { FileSystem, LifecyclePolicy } from '@aws-cdk/aws-efs'
-import { FoundationStack } from '../../lib/foundation-stack'
-import { SolrConstruct } from '../../lib/honeycomb/solr-construct'
+import { FoundationStack } from '../../src/foundation-stack'
+import { SolrConstruct } from '../../src/honeycomb/solr-construct'
 import * as helpers from '../helpers'
 
 describe('SolrConstruct', () => {

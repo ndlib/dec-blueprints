@@ -1,5 +1,5 @@
 import { App } from '@aws-cdk/core'
-import { getContextByNamespace, getRequiredContext } from '../lib/context-helpers'
+import { getContextByNamespace, getRequiredContext } from '../src/context-helpers'
 
 test('getContextByNamespace', () => {
   process.env.CDK_CONTEXT_JSON = JSON.stringify({

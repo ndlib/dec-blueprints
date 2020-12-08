@@ -2,8 +2,8 @@
 import 'source-map-support/register'
 import { App, Aspects } from '@aws-cdk/core'
 import { StackTags } from '@ndlib/ndlib-cdk'
-import { getRequiredContext } from '../lib/context-helpers'
-import { CustomEnvironment } from '../lib/custom-environment'
+import { getRequiredContext } from '../src/context-helpers'
+import { CustomEnvironment } from '../src/custom-environment'
 import * as services from './services'
 import * as pipelines from './pipelines'
 

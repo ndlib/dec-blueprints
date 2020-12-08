@@ -1,6 +1,6 @@
 import { expect as expectCDK, haveOutput, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../lib/foundation-stack'
+import { FoundationStack } from '../src/foundation-stack'
 import helpers = require('../test/helpers')
 
 describe('FoundationStack', () => {
