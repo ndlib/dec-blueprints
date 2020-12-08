@@ -114,26 +114,6 @@ export class HoneypotPipelineStack extends Stack {
     const testNamespace = `${props.namespace}-test`
     const testSsmPrefix = 'dec-test-honeypot'
 
-    // Database Migration Test
-    const migrateTest = new RailsMigration(this, `${props.namespace}-MigrateTest`, {
-      contextEnvName: props.env.name,
-      namespace: testNamespace,
-      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
-      appSourceArtifact,
-      ssmPrefix: testSsmPrefix,
-      foundationStack: props.foundationStack,
-    })
-
-    migrateTest.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-        'ssm:GetParameters',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${testSsmPrefix}/*`),
-      ],
-    }))
-
     // CDK Deploy Test
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testHostnamePrefix = 'honeypot-test'
@@ -185,26 +165,6 @@ export class HoneypotPipelineStack extends Stack {
     const prodNamespace = `${props.namespace}-prod`
     const prodSsmPrefix = 'dec-prod-honeypot'
 
-    // Database Migration Test
-    const migrateProd = new RailsMigration(this, `${props.namespace}-MigrateProd`, {
-      contextEnvName: props.env.name,
-      namespace: prodNamespace,
-      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
-      appSourceArtifact,
-      ssmPrefix: prodSsmPrefix,
-      foundationStack: props.foundationStack,
-    })
-
-    migrateProd.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-        'ssm:GetParameters',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${prodSsmPrefix}/*`),
-      ],
-    }))
-
     // CDK Deploy Prod
     const prodHostnamePrefix = 'honeypot'
     const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
@@ -254,11 +214,11 @@ export class HoneypotPipelineStack extends Stack {
           stageName: 'Source',
         },
         {
-          actions: [migrateTest.action, deployTest.action, smokeTestsAction, approvalAction],
+          actions: [deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [migrateProd.action, deployProd.action],
+          actions: [deployProd.action],
           stageName: 'Production',
         },
       ],
