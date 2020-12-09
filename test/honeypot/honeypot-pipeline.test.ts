@@ -10,10 +10,8 @@ describe('CodeBuild actions', () => {
     helpers.mockDockerCredentials()
   })
   const stack = () => {
-    // Like this maybe?
     process.env.CDK_CONTEXT_JSON = JSON.stringify({ dockerhubCredentialsPath: '/path/to/oauth' })
     const app = new cdk.App()
-    // app.node.setContext('dockerhubCredentialsPath', '/path/to/oauth')
     // WHEN
     const env = {
       name: 'test',
@@ -31,7 +29,7 @@ describe('CodeBuild actions', () => {
       alarmsEmail: 'test@test.edu',
     }
     const hostnamePrefix = 'honeypot-test'
-    const honeypotContext = getContextByNamespace('honeypot')
+    const honeypotContext = getContextByNamespace('hneypot')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
 
     return new HoneypotPipelineStack(app, 'MyHoneypotPipelineStack', {
@@ -92,7 +90,6 @@ describe('CodeBuild actions', () => {
     }))
   })
 })
-
 describe('CodePipeline', () => {
   beforeEach(() => {
     helpers.mockDockerCredentials()
@@ -127,7 +124,6 @@ describe('CodePipeline', () => {
       namespace: 'testNamespace',
       oauthTokenPath: '/path/to/oauth',
       appSourceArtifact: 'testAppArtifact',
-      migrateSecurityGroup: 'sg-123456',
       dockerhubCredentialsPath: '/path/to/credentials',
     })
   }
@@ -142,21 +138,11 @@ describe('CodePipeline', () => {
                 Category: 'Source',
               },
             },
-            {
-              ActionTypeId: {
-                Category: 'Source',
-              },
-            },
           ],
           Name: 'Source',
         },
         {
           Actions: [
-            {
-              ActionTypeId: {
-                Category: 'Build',
-              },
-            },
             {
               ActionTypeId: {
                 Category: 'Build',
@@ -177,15 +163,11 @@ describe('CodePipeline', () => {
                 Category: 'Build',
               },
             },
-            {
-              ActionTypeId: {
-                Category: 'Build',
-              },
-            },
           ],
           Name: 'Production',
         },
       ],
+
     }))
   })
 
@@ -200,22 +182,11 @@ describe('CodePipeline', () => {
                 Category: 'Source',
               },
             },
-            {
-              ActionTypeId: {
-                Category: 'Source',
-              },
-            },
           ],
           Name: 'Source',
         },
         {
           Actions: [
-            {
-              ActionTypeId: {
-                Category: 'Build',
-                Owner: 'AWS',
-              },
-            },
             {
               ActionTypeId: {
                 Category: 'Build',
@@ -235,11 +206,6 @@ describe('CodePipeline', () => {
         },
         {
           Actions: [
-            {
-              ActionTypeId: {
-                Category: 'Build',
-              },
-            },
             {
               ActionTypeId: {
                 Category: 'Build',

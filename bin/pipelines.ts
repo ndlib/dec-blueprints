@@ -7,7 +7,6 @@ import { BuzzStack } from '../src/buzz/buzz-stack'
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
 import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
 
-
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
   const infraRepoOwner = app.node.tryGetContext('infraRepoOwner')
@@ -46,6 +45,6 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...commonProps,
     ...honeypotContext,
   })
-  
-  return { buzzPipelineStack, honeypotPipelineStack, }
+
+  return { buzzPipelineStack, honeypotPipelineStack }
 }
