@@ -1,98 +1,83 @@
+// import * as cdk from '@aws-cdk/core'
+// import { HttpsAlb } from '@ndlib/ndlib-cdk'
+// import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets'
+// import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
+// import { SharedServiceStackProps } from '../shared-stack-props'
+// import { FoundationStack } from '../foundation-stack'
+// import { CustomEnvironment } from '../custom-environment'
+// import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
+// import { SubnetType, Vpc } from '@aws-cdk/aws-ec2'
+// import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
+// import ecs = require('@aws-cdk/aws-ecs')
+// import ssm = require('@aws-cdk/aws-ssm')
+// import fs = require('fs')
+// import { AssetHelpers } from '../asset-helpers'
 import * as cdk from '@aws-cdk/core'
-import { HttpsAlb } from '@ndlib/ndlib-cdk'
-import { DockerImageAsset } from '@aws-cdk/aws-ecr-assets'
-import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
-import { SharedServiceStackProps } from '../shared-stack-props'
-import { FoundationStack } from '../foundation-stack'
-import { CustomEnvironment } from '../custom-environment'
+import {
+  AwsLogDriver,
+  Cluster,
+  FargateService,
+  FargateTaskDefinition,
+  Secret,
+} from '@aws-cdk/aws-ecs'
+import { Peer, Port, SecurityGroup, SubnetType, Vpc } from '@aws-cdk/aws-ec2'
+import { ApplicationListenerRule, ApplicationProtocol, ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2'
+import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
-import { SubnetType, Vpc } from '@aws-cdk/aws-ec2'
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
-import ecs = require('@aws-cdk/aws-ecs')
-import ssm = require('@aws-cdk/aws-ssm')
-import fs = require('fs')
+import { StringParameter } from '@aws-cdk/aws-ssm'
+import { CustomEnvironment } from '../custom-environment'
+import { SharedServiceStackProps } from '../shared-stack-props'
+import { HttpsAlb } from '@ndlib/ndlib-cdk'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
-  readonly hostnamePrefix: string,
   readonly env: CustomEnvironment,
   readonly appDirectory: string
-  readonly foundationStack: FoundationStack
+  readonly hostnamePrefix: string
 }
+
 export class HoneypotStack extends cdk.Stack {
   public readonly hostname: string
 
   constructor (scope: cdk.Construct, id: string, props: HoneypotStackProps) {
     super(scope, id, props)
 
-    // The code that defines your stack goes here
-
-    // Networking
-    const vpcId = cdk.Fn.importValue(`${props.env.networkStackName}:VPCID`)
-    const vpc = Vpc.fromVpcAttributes(this, 'ImportedVPC', {
-      vpcId,
-      availabilityZones: [
-        // This technically doesn't matter in this context, since none of the resources in this app
-        // require AZ for their cloud formations, only subnets. But in the interest of not creating
-        // problems for future things that use this IVpc object, I'm recreating how AZs were defined
-        // for the subnets in the network stack. In those stacks, we aren't exporting the AZs for
-        // Subnet1|2 so this must match the way the subnets were created.
-        cdk.Fn.select(0, cdk.Fn.getAzs()),
-        cdk.Fn.select(1, cdk.Fn.getAzs()),
-      ],
-      publicSubnetIds: [
-        cdk.Fn.importValue(`${props.env.networkStackName}:PublicSubnet1ID`),
-        cdk.Fn.importValue(`${props.env.networkStackName}:PublicSubnet2ID`),
-      ],
-      privateSubnetIds: [
-        cdk.Fn.importValue(`${props.env.networkStackName}:PrivateSubnet1ID`),
-        cdk.Fn.importValue(`${props.env.networkStackName}:PrivateSubnet2ID`),
-      ],
+    const loadBalancer = new HttpsAlb(this, 'loadBalancer', {
+      internetFacing: true,
+      vpc: props.foundationStack.vpc,
+      certificateArns: [props.foundationStack.certificate.certificateArn],
     })
 
-    const alb = new HttpsAlb(this, 'PublicLoadBalancer', {
-      vpc,
-      certificateArns: [cdk.Fn.importValue(`${props.env.domainStackName}:ACMCertificateARN`)],
-      internetFacing: false,
+    const appSecurityGroup = new SecurityGroup(this, 'AppSecurityGroup', {
+      vpc: props.foundationStack.vpc,
+      allowAllOutbound: true,
+    })
+
+    appSecurityGroup.addIngressRule(Peer.anyIpv4(), Port.tcp(80), 'allow all inbound on 80')
+
+    const logging = new AwsLogDriver({
+      streamPrefix: `${this.stackName}-Task`,
+      logGroup: new LogGroup(this, `${this.stackName}`, {
+        retention: RetentionDays.ONE_WEEK,
+      }),
     })
 
     const secretsHelper = (task: string, key: string) => {
-      const parameter = ssm.StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
+      const parameter = StringParameter.fromSecureStringParameterAttributes(this, `${task}${key}`, {
         parameterName: `/all/${this.stackName}/${key}`,
         version: 1, // This doesn't seem to matter in the context of ECS task definitions
       })
-      return ecs.Secret.fromSsmParameter(parameter)
+      return Secret.fromSsmParameter(parameter)
     }
 
-    // ECS Service
-    const cluster = new ecs.Cluster(this, 'FargateCluster', { vpc })
-
-    const appTask = new ecs.TaskDefinition(this, 'AppTaskDefinition', {
-      compatibility: ecs.Compatibility.FARGATE,
-      family: `${this.stackName}-Service`,
-      cpu: '2048',
-      memoryMiB: '4096',
-      networkMode: ecs.NetworkMode.AWS_VPC,
-    })
-
-    const logs = new LogGroup(this, 'SharedLogGroup', { retention: RetentionDays.TWO_WEEKS })
-
-    const logging = ecs.AwsLogDriver.awsLogs({
-      logGroup: logs,
-      streamPrefix: `${this.stackName}-Task`,
-    })
-
-    if (!fs.existsSync(props.appDirectory)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
-      return
-    }
-    // Add Container
-    const containerImage = new DockerImageAsset(this, 'DockerImageAsset', {
+    const containerImage = AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile',
     })
+    const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
 
-    const container = appTask.addContainer('ruby24', {
-      image: ecs.ContainerImage.fromDockerImageAsset(containerImage),
+    const container = appTaskDefinition.addContainer('ruby24', {
+      image: containerImage,
       command: ['bash', '/usr/bin/docker-entrypoint.sh'],
       essential: true,
       logging,
@@ -108,54 +93,43 @@ export class HoneypotStack extends cdk.Stack {
       containerPort: 3019,
     })
 
-    // Define default container for the task before adding the service to the targetGroup,
-    // otherwise CDK will try to create SecurityGroups for all ports on all containers
-    appTask.defaultContainer = container
+    appTaskDefinition.defaultContainer = container
 
-    const appService = new ecs.FargateService(this, 'AppService', {
-      taskDefinition: appTask,
-      cluster,
+    const appService = new FargateService(this, 'AppService', {
+      taskDefinition: appTaskDefinition,
+      cluster: new Cluster(this, 'AppCluster', { vpc: props.foundationStack.vpc }),
       vpcSubnets: { subnetType: SubnetType.PRIVATE },
       desiredCount: 1,
+      securityGroups: [appSecurityGroup],
     })
 
-    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
+    appTaskDefinition.addToTaskRolePolicy(new PolicyStatement({
+      actions: [
+        'ssm:*',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${this.stackName}/*`),
+      ],
+    }))
+
+    const loadBalancerTargetGroup = new ApplicationTargetGroup(this, 'ApplicationTargetGroup', {
       healthCheck: {
+        enabled: true,
         path: '/health',
-        protocol: elbv2.Protocol.HTTP,
-        interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(10),
         healthyThresholdCount: 2,
-        unhealthyThresholdCount: 10,
-        port: '3019',
       },
-      deregistrationDelay: cdk.Duration.seconds(60),
-      targetType: elbv2.TargetType.IP,
-      port: 3019,
-      protocol: elbv2.ApplicationProtocol.HTTP,
-      vpc,
+      vpc: props.foundationStack.vpc,
+      protocol: ApplicationProtocol.HTTP,
       targets: [appService],
     })
 
-    const domainNameImport = cdk.Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const elbv2Applistener = new elbv2.ApplicationListenerRule(this, 'ECSServiceRule2', {
-      targetGroups: [targetGroup],
-      pathPattern: '*',
-      hostHeader: `${props.hostnamePrefix}.${domainNameImport}`,
-      listener: alb.defaultListener,
+    new ApplicationListenerRule(this, 'ApplicationListenerRule', { // eslint-disable-line no-new
+      listener: loadBalancer.defaultListener,
       priority: 1,
+      pathPattern: '*',
+      hostHeader: `${props.hostnamePrefix}.` + cdk.Fn.importValue(`${props.env.domainStackName}:DomainName`),
+      targetGroups: [loadBalancerTargetGroup],
     })
-
-    if (props.env.createDns) {
-      const cnameRecord = new CnameRecord(this, 'ServiceCNAME', {
-        recordName: props.hostnamePrefix,
-        domainName: alb.loadBalancerDnsName,
-        zone: HostedZone.fromHostedZoneAttributes(this, 'ImportedHostedZone', {
-          hostedZoneId: cdk.Fn.importValue(`${props.env.domainStackName}:Zone`),
-          zoneName: domainNameImport,
-        }),
-        ttl: cdk.Duration.minutes(15),
-      })
-    }
   }
 }

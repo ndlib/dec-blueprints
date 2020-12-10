@@ -29,7 +29,7 @@ describe('CodeBuild actions', () => {
       alarmsEmail: 'test@test.edu',
     }
     const hostnamePrefix = 'honeypot-test'
-    const honeypotContext = getContextByNamespace('hneypot')
+    const honeypotContext = getContextByNamespace('honeypot')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
 
     return new HoneypotPipelineStack(app, 'MyHoneypotPipelineStack', {
