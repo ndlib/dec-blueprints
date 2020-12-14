@@ -26,14 +26,10 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly oauthTokenPath: string;
   readonly dockerhubCredentialsPath: string;
-  readonly networkStackName: string;
-  readonly domainStackName: string;
   readonly owner: string;
   readonly contact: string;
-  readonly createDns: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
   readonly foundationStack: FoundationStack
+  readonly hostnamePrefix: string
 }
 
 // Adds permissions required to deploy this service
@@ -136,7 +132,7 @@ export class BuzzPipelineStack extends Stack {
 
     // CDK Deploy Test
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const testHostnamePrefix = 'buzz-test'
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const testHost = `${testHostnamePrefix}.${resolvedDomain}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
@@ -206,7 +202,7 @@ export class BuzzPipelineStack extends Stack {
     }))
 
     // CDK Deploy Prod
-    const prodHostnamePrefix = 'buzz'
+    const prodHostnamePrefix = props.hostnamePrefix
     const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
@@ -219,9 +215,9 @@ export class BuzzPipelineStack extends Stack {
       additionalContext: {
         owner: props.owner,
         contact: props.contact,
-        networkStack: props.networkStackName,
-        domainStack: props.domainStackName,
-        createDns: props.createDns ? 'true' : 'false',
+        networkStack: props.env.networkStackName,
+        domainStack: props.env.domainStackName,
+        createDns: props.env.createDns ? 'true' : 'false',
         'buzz:hostnamePrefix': prodHostnamePrefix,
         'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
@@ -238,7 +234,7 @@ export class BuzzPipelineStack extends Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
-    if (props.slackNotifyStackName !== undefined) {
+    if (props.env.slackNotifyStackName !== undefined) {
       const slackApproval = new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.env.slackNotifyStackName,
@@ -310,10 +306,10 @@ export class BuzzPipelineStack extends Stack {
       ],
     }))
 
-    if (props.notificationReceivers) {
+    if (props.env.notificationReceivers) {
       const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
-        receivers: props.notificationReceivers,
+        receivers: props.env.notificationReceivers,
       })
     }
   }
