@@ -1,12 +1,11 @@
-import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, stringLike } from '@aws-cdk/assert'
+import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, Capture } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { BuzzPipelineStack, CDPipelineStackProps } from '../src/buzz/buzz-pipeline'
-import { getContextByNamespace } from '../src/context-helpers'
 import { FoundationStack } from '../src/foundation-stack'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import helpers = require('../test/helpers')
 import { CustomEnvironment } from '../src/custom-environment'
+import helpers = require('../test/helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
@@ -106,24 +105,45 @@ describe('BuzzPipeline', () => {
     ))
   })
 
-  test('test stage runs smoke tests that make requests to the test host', () => {
+  test('test stage runs smoke tests that make requests to the test host, and over https', () => {
+    const buildSpec = Capture.anyType()
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
+      ServiceRole: {
+        'Fn::GetAtt': [
+          'testpipelinePropnamespaceSmokeTestsRoleE1D617EA',
+          'Arn',
+        ],
+      },
       Source: {
-        BuildSpec: {
-          'Fn::Join': [
-            '',
-            [
-              // stringLike's wildcard doesn't seem to consume \n characters, so this is a bit more explicit of a match than I'd like
-              stringLike('{\n*"phases": {\n*"build": {\n*"commands": [\n*"newman run * --env-var app-host=test.pipelineProp.hostnamePrefix-test.'),
-              {
-                'Fn::ImportValue': 'test.env.domainStackName:DomainName',
-              },
-              stringLike('*--env-var host-protocol=https"\n*]\n*}\n*},\n*\n}'),
-            ],
-          ],
-        },
+        BuildSpec: buildSpec.capture(),
       },
     }))
+    // The BuildSpec will look something like:
+    // BuildSpec: {
+    //   "Fn::Join": [
+    //     "",
+    //     [
+    //       "{\n  \"phases\": {\n    \"build\": {\n      \"commands\": [\n        \"newman run spec/postman/spec.json --env-var app-host=test.pipelineProp.hostnamePrefix-test.",
+    //       {
+    //         "Fn::ImportValue": "test.env.domainStackName:DomainName"
+    //       },
+    //       " --env-var host-protocol=https\"\n      ]\n    }\n  },\n  \"version\": \"0.2\"\n}"
+    //     ]
+    //   ]
+    // }
+    // The encoded JSON is broken up by the domain importValue join arg. So this is to do a little
+    // manipulation to substitute that into a string we can easily parse into a JSON and THEN compare
+    // the build phase commands
+    const joinArgs = buildSpec.capturedValue['Fn::Join'][1]
+    const stringifiedPhases = joinArgs[0] + joinArgs[1]['Fn::ImportValue'] + joinArgs[2]
+    const phasesObject = JSON.parse(stringifiedPhases).phases
+    // We expect it to set the app-host env variable to be the concatenation of three things:
+    //  - The hostname prefix that was passed into the pipeline
+    //  - '-test'
+    //  - the DomainName imported from the domain stack
+    const expectedAppHost = `${lazyEval.pipelineProps.hostnamePrefix}-test.${lazyEval.env.domainStackName}:DomainName`
+    const regex = new RegExp(`newman run .* --env-var app-host=${expectedAppHost} --env-var host-protocol=https`)
+    expect(phasesObject.build.commands).toContainEqual(expect.stringMatching(regex))
   })
 
   test('smoke tests uses the newman image and gets dockerhub credentials from context', () => {
