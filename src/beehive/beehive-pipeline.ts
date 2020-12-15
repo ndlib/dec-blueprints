@@ -27,7 +27,7 @@ export interface IDeploymentPipelineStackProps extends cdk.StackProps {
   readonly qaSpecPath: string;
   readonly oauthTokenPath: string;
   readonly hostnamePrefix: string;
-  readonly dockerCredentialsPath: string;
+  readonly dockerhubCredentialsPath: string;
   readonly networkStackName: string;
   readonly domainStackName: string;
   readonly owner: string;
@@ -82,7 +82,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
 
     // Global variables for pipeline
-    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
+    const dockerhubCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
@@ -105,7 +105,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-beehive`,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
@@ -144,7 +144,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
-          secretsManagerCredentials: dockerCredentials,
+          secretsManagerCredentials: dockerhubCredentials,
         }),
       },
     })
@@ -183,7 +183,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-beehive`,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
@@ -222,7 +222,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
-          secretsManagerCredentials: dockerCredentials,
+          secretsManagerCredentials: dockerhubCredentials,
         }),
       },
     })
