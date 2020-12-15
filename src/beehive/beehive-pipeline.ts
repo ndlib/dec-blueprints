@@ -9,7 +9,7 @@ import { Runtime } from '@aws-cdk/aws-lambda'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { PipelineNotifications } from '@ndlib/ndlib-cdk'
-import { env } from 'process'
+// import { env } from 'process'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -66,7 +66,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const appSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
@@ -75,7 +75,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const infraSourceAction = new codepipelineActions.GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
@@ -130,7 +130,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
-    const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTests', {
+    const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsTest', {
       buildSpec: codebuild.BuildSpec.fromObject({
         phases: {
           build: {
