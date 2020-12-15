@@ -10,7 +10,6 @@ import { AssetHelpers } from './asset-helpers'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import ecs = require('@aws-cdk/aws-ecs')
 import ssm = require('@aws-cdk/aws-ssm')
-import fs = require('fs')
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
@@ -81,10 +80,6 @@ export class HoneypotStack extends cdk.Stack {
       streamPrefix: `${this.stackName}-Task`,
     })
 
-    if (!fs.existsSync(props.appDirectory)) {
-      this.node.addError(`Cannot deploy this stack. Asset path not found ${props.appDirectory}`)
-      return
-    }
     // Add Container
     const containerImage = AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', {
       directory: props.appDirectory,

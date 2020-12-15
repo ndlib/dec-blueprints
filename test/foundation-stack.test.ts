@@ -1,6 +1,6 @@
 import { expect as expectCDK, haveOutput, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../lib/foundation-stack'
+import { FoundationStack } from '../src/foundation-stack'
 import helpers = require('../test/helpers')
 
 describe('FoundationStack', () => {
@@ -25,7 +25,6 @@ describe('FoundationStack', () => {
           useExistingDnsZone: true,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
-          oauthTokenPath: '/path/to/oauth',
         },
       })
     }
@@ -90,7 +89,6 @@ describe('FoundationStack', () => {
           useExistingDnsZone: false,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
-          oauthTokenPath: '/path/to/oauth',
         },
       })
     }

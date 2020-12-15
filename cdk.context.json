@@ -19,7 +19,7 @@
       "domainStackName": "library-domain",
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
-      "slackNotifyStackName": "slack-approval-bot-marble-notifier",
+      "slackNotifyStackName": "slack-approval-bot-wse-approvals-notifier",
       "createGithubWebhooks": true
     }
   },
@@ -30,11 +30,11 @@
   "projectName": "dec",
   "description": "Infrastructure for DEC project",
   "oauthTokenPath": "/all/github/ndlib-git",
-  "dockerCredentialsPath": "/all/dockerhub/credentials",
+  "dockerhubCredentialsPath": "/all/dockerhub/credentials",
   "namespace": "dec",
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
-  "infraSourceBranch": "ESU-1515-buzz-deployment-cdk",
+  "infraSourceBranch": "main",
   "beehive:hostnamePrefix": "collections",
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",

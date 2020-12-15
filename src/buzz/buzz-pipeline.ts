@@ -1,20 +1,19 @@
-import { Fn, Stack, SecretValue, RemovalPolicy } from '@aws-cdk/core'
-import { BuildSpec, BuildEnvironmentVariableType, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import { Fn, Stack } from '@aws-cdk/core'
+import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { BucketEncryption } from '@aws-cdk/aws-s3'
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
+import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
+import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { CDKPipelineMigrate } from '../cdk-pipeline-migrate'
+import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
-import cdk = require('@aws-cdk/core')
-import codepipeline = require('@aws-cdk/aws-codepipeline')
-import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import s3 = require('@aws-cdk/aws-s3')
 import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
+import { DockerhubImage } from '../dockerhub-image'
+import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -26,15 +25,11 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly infraSourceBranch: string;
   readonly namespace: string;
   readonly oauthTokenPath: string;
-  readonly dockerCredentialsPath: string;
-  readonly networkStackName: string;
-  readonly domainStackName: string;
+  readonly dockerhubCredentialsPath: string;
   readonly owner: string;
   readonly contact: string;
-  readonly createDns: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
   readonly foundationStack: FoundationStack
+  readonly hostnamePrefix: string
 }
 
 // Adds permissions required to deploy this service
@@ -54,17 +49,17 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.events(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
   deploy.project.addToRolePolicy(new PolicyStatement({
-    resources: [Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
+    resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
-      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
@@ -88,66 +83,61 @@ export class BuzzPipelineStack extends Stack {
   constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
-    const artifactBucket = new s3.Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: RemovalPolicy.DESTROY,
-    })
-
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode')
-    const appSourceAction = new codepipelineActions.GitHubSourceAction({
+    const appSourceArtifact = new Artifact('AppCode')
+    const appSourceAction = new GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
     })
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
-    const infraSourceAction = new codepipelineActions.GitHubSourceAction({
+    const infraSourceArtifact = new Artifact('InfraCode')
+    const infraSourceAction = new GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: SecretValue.secretsManager(props.env.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
     })
 
-    //Global variables for pipeline
-    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerCredentialsPath)
+    // Global variables for pipeline
+    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
 
-    //Global variables for test space
+    // Global variables for test space
     const testNamespace = `${props.namespace}-test`
-    const testSsmPrefix = `dec-test-buzz`
+    const testSsmPrefix = 'dec-test-buzz'
 
     // Database Migration Test
-    const migrateTest = new CDKPipelineMigrate(this, `${props.namespace}-MigrateTest`,{
-        contextEnvName: props.env.name,
-        namespace: testNamespace,
-        dockerCredentialsPath: props.dockerCredentialsPath,
-        appSourceArtifact,
-        ssmPrefix: testSsmPrefix,
-        foundationStack:  props.foundationStack,
+    const migrateTest = new RailsMigration(this, `${props.namespace}-MigrateTest`, {
+      contextEnvName: props.env.name,
+      namespace: testNamespace,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+      appSourceArtifact,
+      ssmPrefix: testSsmPrefix,
+      foundationStack: props.foundationStack,
     })
 
     migrateTest.project.addToRolePolicy(new PolicyStatement({
-            actions: [
-              'ssm:GetParameter',
-              'ssm:GetParameters',
-            ],
-            resources: [
-              cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${testSsmPrefix}/*`),
-            ],
-          }))
-    
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${testSsmPrefix}/*`),
+      ],
+    }))
+
     // CDK Deploy Test
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const testHostnamePrefix = 'buzz-test'
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const testHost = `${testHostnamePrefix}.${resolvedDomain}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
-      contextEnvName: props.env.name, 
+      contextEnvName: props.env.name,
       targetStack: `${testNamespace}-buzz`,
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       dependsOnStacks: [],
       infraSourceArtifact,
       appSourceArtifact,
@@ -158,8 +148,8 @@ export class BuzzPipelineStack extends Stack {
         networkStack: props.env.networkStackName,
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
-        "buzz:hostnamePrefix": testHostnamePrefix,
-        "buzz:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+        'buzz:hostnamePrefix': testHostnamePrefix,
+        'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
@@ -170,69 +160,66 @@ export class BuzzPipelineStack extends Stack {
         phases: {
           build: {
             commands: [
-              `newman run spec/postman/spec.json --env-var app-host=${testHost} --env-var host-protocol=https` ,
+              `newman run spec/postman/spec.json --env-var app-host=${testHost} --env-var host-protocol=https`,
             ],
           },
         },
         version: '0.2',
       }),
       environment: {
-        buildImage: LinuxBuildImage.fromDockerRegistry('postman/newman',{
-            secretsManagerCredentials: dockerCredentials,
-        }),
+        buildImage: DockerhubImage.fromNewman(this, 'BuzzSmokeTestsImage', 'dockerhubCredentialsPath'),
       },
     })
-    const smokeTestsAction = new codepipelineActions.CodeBuildAction({
+    const smokeTestsAction = new CodeBuildAction({
       input: appSourceArtifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
     })
 
-    //Global variables for test space
+    // Global variables for test space
     const prodNamespace = `${props.namespace}-prod`
-    const prodSsmPrefix = `dec-prod-buzz`
-
+    const prodSsmPrefix = 'dec-prod-buzz'
 
     // Database Migration Test
-    const migrateProd = new CDKPipelineMigrate(this, `${props.namespace}-MigrateProd`,{
-        contextEnvName: props.env.name,
-        namespace: prodNamespace,
-        dockerCredentialsPath: props.dockerCredentialsPath,
-        appSourceArtifact,
-        ssmPrefix: prodSsmPrefix,
-        foundationStack:  props.foundationStack,
+    const migrateProd = new RailsMigration(this, `${props.namespace}-MigrateProd`, {
+      contextEnvName: props.env.name,
+      namespace: prodNamespace,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+      appSourceArtifact,
+      ssmPrefix: prodSsmPrefix,
+      foundationStack: props.foundationStack,
     })
 
     migrateProd.project.addToRolePolicy(new PolicyStatement({
-            actions: [
-              'ssm:GetParameter',
-              'ssm:GetParameters',
-            ],
-            resources: [
-              cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${prodSsmPrefix}/*`),
-            ],
-          }))
-    
+      actions: [
+        'ssm:GetParameter',
+        'ssm:GetParameters',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${prodSsmPrefix}/*`),
+      ],
+    }))
+
     // CDK Deploy Prod
-    const prodHostnamePrefix = 'buzz'
+    const prodHostnamePrefix = props.hostnamePrefix
     const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-buzz`,
       dependsOnStacks: [],
-      dockerCredentialsPath: props.dockerCredentialsPath,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       infraSourceArtifact,
       appSourceArtifact,
       namespace: prodNamespace,
       additionalContext: {
         owner: props.owner,
         contact: props.contact,
-        networkStack: props.networkStackName,
-        domainStack: props.domainStackName,
-        createDns: props.createDns ? 'true' : 'false',
-        "buzz:hostnamePrefix": prodHostnamePrefix,
-        "buzz:appDirectory": '$CODEBUILD_SRC_DIR_AppCode',
+        networkStack: props.env.networkStackName,
+        domainStack: props.env.domainStackName,
+        createDns: props.env.createDns ? 'true' : 'false',
+        'buzz:hostnamePrefix': prodHostnamePrefix,
+        'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
@@ -247,82 +234,82 @@ export class BuzzPipelineStack extends Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
-    // if (props.slackNotifyStackName !== undefined) {
-    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
-    //     approvalTopic,
-    //     notifyStackName: props.slackNotifyStackName,
-    //   })
-    // }
+    if (props.env.slackNotifyStackName !== undefined) {
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.env.slackNotifyStackName,
+      })
+    }
 
     // Pipeline
-    const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+    const pipeline = new Pipeline(this, 'DeploymentPipeline', {
+      artifactBucket: props.foundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],
           stageName: 'Source',
         },
         {
-          actions: [ migrateTest.action, deployTest.action, smokeTestsAction /* ,approvalAction*/ ],
+          actions: [migrateTest.action, deployTest.action, smokeTestsAction, approvalAction],
           stageName: 'Test',
         },
         {
-          actions: [ migrateProd.action, deployProd.action],
+          actions: [migrateProd.action, deployProd.action],
           stageName: 'Production',
         },
       ],
     })
 
     deployTest.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-          'ssm:GetParameter',
-        ],
-        resources: [
-          cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
-        ],
-      }))
+      actions: [
+        'ssm:GetParameter',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
+      ],
+    }))
 
     deployTest.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-            'ecr:DescribeImages',
-            'ecr:InitiateLayerUpload',
-            'ecr:UploadLayerPart',
-            'ecr:CompleteLayerUpload',
-            'ecr:PutImage',
-            'ecr:BatchCheckLayerAvailability',
-        ],
-        resources: [
-            cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
-        ],
+      actions: [
+        'ecr:DescribeImages',
+        'ecr:InitiateLayerUpload',
+        'ecr:UploadLayerPart',
+        'ecr:CompleteLayerUpload',
+        'ecr:PutImage',
+        'ecr:BatchCheckLayerAvailability',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
+      ],
     }))
 
     deployProd.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-          'ssm:GetParameter',
-        ],
-        resources: [
-          cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
-        ],
-      }))
-
-    deployProd.project.addToRolePolicy(new PolicyStatement({
-        actions: [
-            'ecr:DescribeImages',
-            'ecr:InitiateLayerUpload',
-            'ecr:UploadLayerPart',
-            'ecr:CompleteLayerUpload',
-            'ecr:PutImage',
-            'ecr:BatchCheckLayerAvailability',
-        ],
-        resources: [
-            cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
-        ],
+      actions: [
+        'ssm:GetParameter',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
+      ],
     }))
 
-    if (props.notificationReceivers) {
+    deployProd.project.addToRolePolicy(new PolicyStatement({
+      actions: [
+        'ecr:DescribeImages',
+        'ecr:InitiateLayerUpload',
+        'ecr:UploadLayerPart',
+        'ecr:CompleteLayerUpload',
+        'ecr:PutImage',
+        'ecr:BatchCheckLayerAvailability',
+      ],
+      resources: [
+        cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
+      ],
+    }))
+
+    if (props.env.notificationReceivers) {
       const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
-        receivers: props.notificationReceivers,
+        receivers: props.env.notificationReceivers,
       })
     }
   }

@@ -2,11 +2,11 @@ import { expect as expectCDK, haveResource, haveResourceLike, SynthUtils } from 
 import * as cdk from '@aws-cdk/core'
 import { RemovalPolicy, Stack } from '@aws-cdk/core'
 import { FileSystem, LifecyclePolicy } from '@aws-cdk/aws-efs'
-import { FoundationStack } from '../../lib/foundation-stack'
-import { RailsConstruct } from '../../lib/honeycomb/rails-construct'
+import { FoundationStack } from '../../src/foundation-stack'
+import { RailsConstruct } from '../../src/honeycomb/rails-construct'
 import { SecurityGroup } from '@aws-cdk/aws-ec2'
-import { SolrConstruct } from '../../lib/honeycomb/solr-construct'
-import { RabbitMqConstruct } from '../../lib/honeycomb/rabbitmq-construct'
+import { SolrConstruct } from '../../src/honeycomb/solr-construct'
+import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
 import * as helpers from '../helpers'
 
 describe('RailsConstruct', () => {

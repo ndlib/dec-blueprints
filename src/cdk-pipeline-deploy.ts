@@ -10,6 +10,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    * permissions to create change sets on these stacks.
    */
   readonly targetStack: string;
+
   /**
    * The stack names that the target stack will depend on. Will add permissions
    * to also create change sets on these stacks. Note: This can be ignored
@@ -50,7 +51,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
   readonly outputDirectory?: string;
   readonly outputFiles?: string[];
   readonly outputArtifact?: Artifact;
-  readonly dockerCredentialsPath: string
+  readonly dockerhubCredentialsPath: string
 
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
