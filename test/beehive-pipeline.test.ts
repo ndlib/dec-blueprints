@@ -33,7 +33,7 @@ describe('BeehivePipeline', () => {
     qaSpecPath: 'test_qaSpecPath',
     oauthTokenPath: 'test_oauthTokenPath',
     hostnamePrefix: 'test_hostnamePrefix',
-    dockerCredentialsPath: 'test_dockerCredentialsPath',
+    dockerhubCredentialsPath: 'test_dockerCredentialsPath',
     networkStackName: 'test_networkStackName',
     domainStackName: 'test_domainStackName',
     owner: 'test_owner',
