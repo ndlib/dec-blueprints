@@ -9,7 +9,6 @@ import { Runtime } from '@aws-cdk/aws-lambda'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { PipelineNotifications } from '@ndlib/ndlib-cdk'
-// import { env } from 'process'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -28,13 +27,9 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly oauthTokenPath: string;
   readonly hostnamePrefix: string;
   readonly dockerhubCredentialsPath: string;
-  readonly networkStackName: string;
-  readonly domainStackName: string;
   readonly owner: string;
   readonly contact: string;
-  readonly createDns: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
+  readonly slackNotifyStackName: string;
   readonly foundationStack: FoundationStack;
 }
 
@@ -98,7 +93,6 @@ export class BeehivePipelineStack extends cdk.Stack {
     const prodHostnamePrefix = `${props.hostnamePrefix}`
     const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const prodURL = `${prodHostnamePrefix}-${props.env.name}.${resolvedDomain}`
-    // const prodHost = `${prodHostnamePrefix}.${resolvedProdDomain}`
 
     // Deploy Test actions
 
@@ -125,8 +119,10 @@ export class BeehivePipelineStack extends cdk.Stack {
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
+
     addPermissions(deployTest, testNamespace)
 
+  
     deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
