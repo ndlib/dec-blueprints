@@ -15,7 +15,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import cdk = require('@aws-cdk/core')
 
-export interface IDeploymentPipelineStackProps extends cdk.StackProps {
+export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
@@ -51,7 +51,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
 }
 
 export class BeehivePipelineStack extends cdk.Stack {
-  constructor (scope: cdk.Construct, id: string, props: IDeploymentPipelineStackProps) {
+  constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
     const repoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
