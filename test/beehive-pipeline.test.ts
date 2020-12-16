@@ -28,19 +28,19 @@ describe('BeehivePipeline', () => {
 
   lazyEval('env', () => ({
   //const env = {
-    name: 'test',
-    domainName: 'test.edu',
-    domainStackName: 'test-edu-domain',
-    networkStackName: 'test-network',
-    region: 'test-region',
-    account: 'test-account',
+    name: 'test.env.name',
+    domainName: 'test.env.domainName',
+    domainStackName: 'test.env.domainStackName',
+    networkStackName: 'test.env.networkStackName',
+    region: 'test.env.region',
+    account: 'test.env.account',
     createDns: true,
-    slackNotifyStackName: 'slack-test',
+    slackNotifyStackName: 'test.env.slackNotifyStackName',
     createGithubWebhooks: false,
     useExistingDnsZone: false,
-    notificationReceivers: 'test@test.edu',
-    alarmsEmail: 'test@test.edu',
-    oauthTokenPath: 'test-oauthTokenPath',
+    notificationReceivers: 'test.env.notificationReceivers',
+    alarmsEmail: 'test.env.alarmsEmail',
+    oauthTokenPath: 'test.env.oauthTokenPath',
   }))
 
   lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env }))
@@ -109,8 +109,6 @@ describe('BeehivePipeline', () => {
         contextEnvName: 'test.env.name',
         targetStack: 'test.pipelineProp.namespace-test-beehive', // Targets the test stack
         dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
-        infraSourceArtifact,
-        appSourceArtifact,
         dependsOnStacks: [],
         appBuildCommands: [
           'npm install',
@@ -123,7 +121,7 @@ describe('BeehivePipeline', () => {
           networkStack: 'test.env.networkStackName',
           domainStack: 'test.env.domainStackName',
           createDns: 'true',
-          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-test', // Adds -test to the provided hostname
+          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-prep', // Adds -test to the provided hostname
           'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
           infraDirectory: '$CODEBUILD_SRC_DIR',
         },
@@ -131,6 +129,46 @@ describe('BeehivePipeline', () => {
     )
   })
 
+  test('calls the CDKPipelineProject with the correct properties to create the production deployment', async () => {
+    // Mock the pipeine deploy then reimport its dependencies
+    jest.doMock('../src/cdk-pipeline-deploy')
+    const CDKPipelineDeploy = (await import('../src/cdk-pipeline-deploy')).CDKPipelineDeploy
+    const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
+    const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
+    MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
+
+    // Must instantiate the stack in this scope or the mock won't work
+    const subject = new BeehivePipelineStack(lazyEval.app, 'MyBeehivePipelineStack', lazyEval.pipelineProps)
+
+    // A lot of this should be separated out into different expectations/tests, but manual mocking
+    // of the local module is pretty painful, so doing this all in one shot. Adding some comments
+    // to call out some of the expectations
+    expect(MockedCDKPipelineDeploy).toHaveBeenCalledWith(
+      expect.any(Object),
+      'test.pipelineProp.namespace-DeployProd', // Creates a CodeBuild project with an id of namespace-DeployProd
+      expect.objectContaining({
+        contextEnvName: 'test.env.name',
+        targetStack: 'test.pipelineProp.namespace-prod-beehive', // Targets the prod stack
+        dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
+        dependsOnStacks: [],
+        appBuildCommands: [
+          'npm install',
+          'npm run build',
+        ],
+        namespace: 'test.pipelineProp.namespace-prod', // Adds -prod to the provided namespace
+        additionalContext: {
+          owner: 'test.pipelineProp.owner',
+          contact: 'test.pipelineProp.contact',
+          networkStack: 'test.env.networkStackName',
+          domainStack: 'test.env.domainStackName',
+          createDns: 'true',
+          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix', 
+          'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
+          infraDirectory: '$CODEBUILD_SRC_DIR',
+        },
+      }),
+    )
+  })
 
 xtest('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
   expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
