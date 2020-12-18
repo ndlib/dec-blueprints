@@ -28,6 +28,10 @@ jobs:
       run: |
           cd dec-blueprints
           npm run build --if-present
+    - name: Run Linters
+      run: |
+          cd dec-blueprints
+          npm run lint
     - name: Run Unit Tests
       run: |
           cd dec-blueprints
