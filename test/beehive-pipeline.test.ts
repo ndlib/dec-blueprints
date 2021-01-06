@@ -72,7 +72,7 @@ describe('BeehivePipeline', () => {
 
   lazyEval('subject', () => new BeehivePipelineStack(lazyEval.app, 'MyBeehivePipelineStack', lazyEval.pipelineProps))
 
-  xtest('uses encrypted artifact bucket', () => {
+  test('uses encrypted artifact bucket', () => {
     // const pipelineStack = subject()
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::S3::Bucket', {
       BucketEncryption: {
@@ -170,7 +170,7 @@ describe('BeehivePipeline', () => {
     )
   })
 
-xtest('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
+test('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
   expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
     Stages: [
       objectLike({
@@ -186,9 +186,7 @@ xtest('creates a CodePipeline with stages in the following order: Source->Test->
   })))
 })
 
-  test.todo('deploy prod stack')
-
-  xtest('runs smoke test against test stack', () => {
+  test('runs smoke test against test stack', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
         Image: 'postman/newman',
@@ -201,8 +199,7 @@ xtest('creates a CodePipeline with stages in the following order: Source->Test->
       },
     }))
   })
-  test.todo('waits for approval at test stage')
-  xtest('runs smoke test against prod stack', () => {
+  test('runs smoke test against prod stack', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
         Image: 'postman/newman',
@@ -216,7 +213,7 @@ xtest('creates a CodePipeline with stages in the following order: Source->Test->
     }))
   })
 
-  xtest('Has and SNS approval topic', () => {
+  test('Has and SNS approval topic', () => {
     expectCDK(lazyEval.subject).to(haveResource('AWS::SNS::Topic'))
   })
 })
