@@ -5,7 +5,6 @@ import { Topic } from '@aws-cdk/aws-sns'
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
-import { Runtime } from '@aws-cdk/aws-lambda'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { PipelineNotifications } from '@ndlib/ndlib-cdk'
@@ -38,7 +37,6 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
-  deploy.project.addToRolePolicy(NamespacedPolicy.lambda(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
     GlobalActions.Cloudfront,
     GlobalActions.Route53,
