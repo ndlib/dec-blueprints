@@ -112,6 +112,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
+        'rm package-lock.json',
         'yarn install',
         'yarn run build',
       ],
