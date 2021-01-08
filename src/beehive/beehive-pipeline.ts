@@ -112,9 +112,9 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        'rm package-lock.json',
-        'yarn install',
-        'yarn run build',
+        'ls',
+        'npm install',
+        'npm run build',
       ],
       namespace: testNamespace,
       additionalContext: {
