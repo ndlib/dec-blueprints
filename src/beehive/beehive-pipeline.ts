@@ -11,6 +11,7 @@ import { PipelineNotifications } from '@ndlib/ndlib-cdk'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
+import { PolicyStatement } from '@aws-cdk/aws-iam'
 import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
@@ -42,6 +43,14 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     GlobalActions.Cloudfront,
     GlobalActions.Route53,
   ]))
+  deploy.project.addToRolePolicy(new PolicyStatement({
+    actions: [
+      'lambda:PublishLayerVersion',
+    ],
+    resources: [
+      '*'
+    ],
+  }))
 }
 
 export class BeehivePipelineStack extends cdk.Stack {
@@ -83,7 +92,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const testSsmPrefix = 'dec-test-beehive'
 
     // Test Host variables
-    const testHostnamePrefix = `${props.hostnamePrefix}-test`
+    const testHostnamePrefix = `${props.hostnamePrefix}-prep`
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testURL = `${testHostnamePrefix}-${props.env.name}.${resolvedDomain}`
     // const testHost = `${testHostnamePrefix}.${resolvedDomain}`
