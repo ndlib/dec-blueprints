@@ -112,8 +112,8 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        'npm install',
-        'npm run build',
+        'yarn install',
+        'yarn run build',
       ],
       namespace: testNamespace,
       additionalContext: {
@@ -192,8 +192,8 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        'npm install',
-        'npm run build',
+        'yarn install',
+        'yarn run build',
       ],
       namespace: prodNamespace,
       additionalContext: {
