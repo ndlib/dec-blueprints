@@ -46,6 +46,8 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(new PolicyStatement({
     actions: [
       'lambda:PublishLayerVersion',
+      'lambda:DeleteLayerVersion',
+      'lambda:GetLayerVersion',
     ],
     resources: [
       '*'
@@ -112,9 +114,9 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        'ls',
-        'npm install',
-        'npm run build',
+        'npm install -g yarn',
+        'yarn install',
+        'yarn build',
       ],
       namespace: testNamespace,
       additionalContext: {
@@ -193,9 +195,9 @@ export class BeehivePipelineStack extends cdk.Stack {
       infraSourceArtifact,
       appSourceArtifact,
       appBuildCommands: [
-        'rm package-lock.json',
+        'npm install -g yarn',
         'yarn install',
-        'yarn run build',
+        'yarn build',
       ],
       namespace: prodNamespace,
       additionalContext: {
