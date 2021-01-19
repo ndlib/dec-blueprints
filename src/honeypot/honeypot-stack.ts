@@ -105,7 +105,7 @@ export class HoneypotStack extends cdk.Stack {
 
     appTaskDefinition.addToTaskRolePolicy(new PolicyStatement({
       actions: [
-        'ssm:*',
+        'ssm:Get',
       ],
       resources: [
         cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/${this.stackName}/*`),
