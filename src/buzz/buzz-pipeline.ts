@@ -14,6 +14,7 @@ import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { DockerhubImage } from '../dockerhub-image'
 import cdk = require('@aws-cdk/core')
+import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -28,12 +29,14 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly dockerhubCredentialsPath: string;
   readonly owner: string;
   readonly contact: string;
-  readonly foundationStack: FoundationStack
+  readonly pipelineFoundationStack: PipelineFoundationStack
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
 }
 
 // Adds permissions required to deploy this service
-const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
+const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundationStack: FoundationStack) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
     GlobalActions.ECR,
     GlobalActions.ECS,
@@ -52,14 +55,15 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
+  deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/dec-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/dec-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0,5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0,5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0,5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0,5) + '-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
@@ -117,7 +121,7 @@ export class BuzzPipelineStack extends Stack {
       dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       appSourceArtifact,
       ssmPrefix: testSsmPrefix,
-      foundationStack: props.foundationStack,
+      foundationStack: props.testFoundationStack,
     })
 
     migrateTest.project.addToRolePolicy(new PolicyStatement({
@@ -131,9 +135,8 @@ export class BuzzPipelineStack extends Stack {
     }))
 
     // CDK Deploy Test
-    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const testHost = `${testHostnamePrefix}.${resolvedDomain}`
+    const testHost = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-buzz`,
@@ -153,14 +156,14 @@ export class BuzzPipelineStack extends Stack {
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
-    addPermissions(deployTest, testNamespace)
+    addPermissions(deployTest, testNamespace, props.testFoundationStack)
 
     const smokeTestsProject = new PipelineProject(this, `${props.namespace}-SmokeTests`, {
       buildSpec: BuildSpec.fromObject({
         phases: {
           build: {
             commands: [
-              `newman run spec/postman/spec.json --env-var app-host=${testHost} --env-var host-protocol=https`,
+              'newman run spec/postman/spec.json --env-var app-host=${TARGET_HOST} --env-var host-protocol=https',
             ],
           },
         },
@@ -175,6 +178,9 @@ export class BuzzPipelineStack extends Stack {
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
+      environmentVariables: {
+        TARGET_HOST: { value: testHost },
+      },
     })
 
     // Global variables for test space
@@ -188,7 +194,7 @@ export class BuzzPipelineStack extends Stack {
       dockerhubCredentialsPath: props.dockerhubCredentialsPath,
       appSourceArtifact,
       ssmPrefix: prodSsmPrefix,
-      foundationStack: props.foundationStack,
+      foundationStack: props.prodFoundationStack,
     })
 
     migrateProd.project.addToRolePolicy(new PolicyStatement({
@@ -203,7 +209,7 @@ export class BuzzPipelineStack extends Stack {
 
     // CDK Deploy Prod
     const prodHostnamePrefix = props.hostnamePrefix
-    const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
+    const prodHost = `${prodHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-buzz`,
@@ -223,7 +229,17 @@ export class BuzzPipelineStack extends Stack {
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
-    addPermissions(deployProd, prodNamespace)
+    addPermissions(deployProd, prodNamespace, props.prodFoundationStack)
+
+    const smokeTestsProd = new CodeBuildAction({
+      input: appSourceArtifact,
+      project: smokeTestsProject,
+      actionName: 'SmokeTests',
+      runOrder: 98,
+      environmentVariables: {
+        TARGET_HOST: { value: prodHost },
+      },
+    })
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -243,7 +259,7 @@ export class BuzzPipelineStack extends Stack {
 
     // Pipeline
     const pipeline = new Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket: props.foundationStack.artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],
@@ -254,20 +270,20 @@ export class BuzzPipelineStack extends Stack {
           stageName: 'Test',
         },
         {
-          actions: [migrateProd.action, deployProd.action],
+          actions: [migrateProd.action, deployProd.action, smokeTestsProd],
           stageName: 'Production',
         },
       ],
     })
 
-    deployTest.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
-      ],
-    }))
+    // deployTest.project.addToRolePolicy(new PolicyStatement({
+    //   actions: [
+    //     'ssm:GetParameter',
+    //   ],
+    //   resources: [
+    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
+    //   ],
+    // }))
 
     deployTest.project.addToRolePolicy(new PolicyStatement({
       actions: [
@@ -283,14 +299,14 @@ export class BuzzPipelineStack extends Stack {
       ],
     }))
 
-    deployProd.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
-      ],
-    }))
+    // deployProd.project.addToRolePolicy(new PolicyStatement({
+    //   actions: [
+    //     'ssm:GetParameter',
+    //   ],
+    //   resources: [
+    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/buzz/sg_database_connect`),
+    //   ],
+    // }))
 
     deployProd.project.addToRolePolicy(new PolicyStatement({
       actions: [

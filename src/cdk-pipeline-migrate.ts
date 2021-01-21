@@ -49,14 +49,7 @@ export class RailsMigration extends Construct {
     constructor (scope: Construct, id: string, props: ICDKPipelineDeployProps) {
       super(scope, id)
 
-      //   let addtlContext = ''
-      //   if (props.additionalContext !== undefined) {
-      //     Object.entries(props.additionalContext).forEach((val) => {
-      //       addtlContext += ` -c "${val[0]}=${val[1]}"`
-      //     })
-      //   }
-      const databaseConnectSecurityGroupId = StringParameter.valueFromLookup(this, '/all/buzz/sg_database_connect')
-      const databaseConnectSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'databaseConnectSG', databaseConnectSecurityGroupId)
+
       const migrateSecurityGroup = new SecurityGroup(this, 'MigrateSecurityGroup', {
         vpc: props.foundationStack.vpc,
       })
@@ -70,7 +63,7 @@ export class RailsMigration extends Construct {
         vpc: props.foundationStack.vpc,
         securityGroups: [
           migrateSecurityGroup,
-          databaseConnectSecurityGroup,
+          props.foundationStack.databaseSecurityGroup,
         ],
         environment: {
           buildImage: LinuxBuildImage.fromDockerRegistry('ruby:2.4.4', {
@@ -100,8 +93,8 @@ export class RailsMigration extends Construct {
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
           RAILS_ENV: {
-            value: `/all/${props.ssmPrefix}/rails_env`,
-            type: BuildEnvironmentVariableType.PARAMETER_STORE,
+            value: 'production',
+            type: BuildEnvironmentVariableType.PLAINTEXT,
           },
           RAILS_SECRET_KEY_BASE: {
             value: `/all/${props.ssmPrefix}/rails-secret-key-base`,
