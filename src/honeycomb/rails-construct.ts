@@ -20,10 +20,10 @@ import { RabbitMqConstruct } from './rabbitmq-construct'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { ECSSecretsHelper } from '../ecs-secrets-helpers'
-import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import { HoneypotStack } from '../honeypot-stack'
 import { BeehiveStack } from '../beehive-stack'
 import { BuzzStack } from '../buzz/buzz-stack'
+import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 
 export interface RailsConstructProps {
   /**
@@ -125,6 +125,8 @@ export class RailsConstruct extends Construct {
       SOLR_PORT: '8983',
       RAILS_ENV: 'production',
       RAILS_LOG_TO_STDOUT: 'true',
+      RAILS_LOG_LEVEL: 'DEBUG',
+      RAILS_LOG_AUTOFLUSH: 'true',
       RABBIT_HOST: props.rabbitMq.hostname,
       RABBIT_VHOST: '/',
       HONEYCOMB_HOST: this.hostname,

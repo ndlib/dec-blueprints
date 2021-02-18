@@ -1,6 +1,6 @@
-import { Construct, Stack, StackProps, RemovalPolicy } from "@aws-cdk/core"
+import { Construct, Stack, StackProps, RemovalPolicy } from '@aws-cdk/core'
 import { ArtifactBucket } from '@ndlib/ndlib-cdk'
-import { BucketEncryption } from "@aws-cdk/aws-s3"
+import { BucketEncryption } from '@aws-cdk/aws-s3'
 
 export class PipelineFoundationStack extends Stack {
   /**
@@ -8,7 +8,7 @@ export class PipelineFoundationStack extends Stack {
    */
   public readonly artifactBucket: ArtifactBucket
 
-  constructor(scope: Construct, id: string, props?: StackProps) {
+  constructor (scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props)
     this.artifactBucket = new ArtifactBucket(this, 'Bucket', {
       encryption: BucketEncryption.KMS_MANAGED,

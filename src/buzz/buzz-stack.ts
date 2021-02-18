@@ -112,7 +112,7 @@ export class BuzzStack extends cdk.Stack {
       port: 80,
     })
 
-    new ApplicationListenerRule(this, 'ApplicationListenerRule', {
+    const buzzRule = new ApplicationListenerRule(this, 'ApplicationListenerRule', {
       listener: props.foundationStack.publicLoadBalancer.defaultListener,
       priority: 1,
       pathPattern: '*',

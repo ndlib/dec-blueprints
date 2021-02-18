@@ -49,7 +49,6 @@ export class RailsMigration extends Construct {
     constructor (scope: Construct, id: string, props: ICDKPipelineDeployProps) {
       super(scope, id)
 
-
       const migrateSecurityGroup = new SecurityGroup(this, 'MigrateSecurityGroup', {
         vpc: props.foundationStack.vpc,
       })

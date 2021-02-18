@@ -102,10 +102,10 @@ export class FoundationStack extends cdk.Stack {
     this.mediaBucket = new Bucket(this, 'mediaBucket', {
       publicReadAccess: true,
       cors: [{
-        allowedHeaders: [ '*' ],
-        allowedMethods: [ HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST ],
-        allowedOrigins: [ `https://${props.honeycombHostnamePrefix}.${props.env.domainName}` ],
-        exposedHeaders: [ 'ETag' ],
+        allowedHeaders: ['*'],
+        allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
+        allowedOrigins: [`https://${props.honeycombHostnamePrefix}.${props.env.domainName}`],
+        exposedHeaders: ['ETag'],
         maxAge: 3000,
       }],
     })

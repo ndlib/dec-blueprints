@@ -13,7 +13,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const infraSourceBranch = app.node.tryGetContext('infraSourceBranch')
   const dockerhubCredentialsPath = app.node.tryGetContext('dockerhubCredentialsPath')
   const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
-  
+
   const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, { env })
   const commonProps = {
     namespace,
@@ -27,7 +27,6 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     testFoundationStack: testStacks.foundationStack,
     prodFoundationStack: prodStacks.foundationStack,
   }
-
 
   const buzzContext = getContextByNamespace('buzz')
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {

@@ -13,8 +13,8 @@ import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { DockerhubImage } from '../dockerhub-image'
-import cdk = require('@aws-cdk/core')
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
+import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -60,10 +60,10 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0,5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0,5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0,5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0,5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0, 5) + '-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
