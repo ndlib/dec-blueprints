@@ -1,4 +1,4 @@
-import { Port, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
+import { Port, ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import {
   AwsLogDriver,
   FargatePlatformVersion,
@@ -7,8 +7,8 @@ import {
   Secret,
   Cluster,
 } from '@aws-cdk/aws-ecs'
+import { Bucket } from '@aws-cdk/aws-s3'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 import { LogGroup } from '@aws-cdk/aws-logs'
 import { AssetHelpers } from '../asset-helpers'
 import { Construct, Duration, Fn, Stack } from '@aws-cdk/core'
@@ -20,6 +20,9 @@ import { RabbitMqConstruct } from './rabbitmq-construct'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { ECSSecretsHelper } from '../ecs-secrets-helpers'
+import { HoneypotStack } from '../honeypot-stack'
+import { BeehiveStack } from '../beehive-stack'
+import { BuzzStack } from '../buzz/buzz-stack'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 
 export interface RailsConstructProps {
@@ -82,19 +85,27 @@ export interface RailsConstructProps {
    * Reference to the RabbitMq instance that Rails should use
    */
   readonly rabbitMq: RabbitMqConstruct
+
+  readonly honeypot: HoneypotStack
+  readonly beehive: BeehiveStack
+  readonly buzz: BuzzStack
+  readonly mediaBucket: Bucket
+  readonly databaseSecurityGroup: ISecurityGroup
 }
 
 export class RailsConstruct extends Construct {
+  public readonly hostname: string
+
   constructor (scope: Construct, id: string, props:RailsConstructProps) {
     super(scope, id)
     const stack = Stack.of(this)
     const stackName = stack.stackName
+    const domainNameImport = Fn.importValue(`${props.env.domainStackName}:DomainName`)
+    this.hostname = `${props.hostnamePrefix}.${domainNameImport}`
 
     // Define Security Groups needed for service
-    const databaseSecurityGroupParameter = StringParameter.valueFromLookup(this, `/all/${stackName}/sg_database_connect`)
-    const databaseConnectSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', databaseSecurityGroupParameter)
     const securityGroups = [
-      databaseConnectSecurityGroup,
+      props.databaseSecurityGroup,
       props.appSecurityGroup,
     ]
 
@@ -114,8 +125,17 @@ export class RailsConstruct extends Construct {
       SOLR_PORT: '8983',
       RAILS_ENV: 'production',
       RAILS_LOG_TO_STDOUT: 'true',
+      RAILS_LOG_LEVEL: 'DEBUG',
+      RAILS_LOG_AUTOFLUSH: 'true',
       RABBIT_HOST: props.rabbitMq.hostname,
       RABBIT_VHOST: '/',
+      HONEYCOMB_HOST: this.hostname,
+      HONEYPOT_HOST: `https://${props.honeypot.hostname}`,
+      BEEHIVE_HOST: `https://${props.beehive.hostname}`,
+      BUZZ_HOST: `https://${props.buzz.hostname}`,
+      MEDIA_BUCKET_REGION: stack.region,
+      MEDIA_BUCKET_NAME: props.mediaBucket.bucketName,
+      AWS_PROFILE: '', // Need to blank this out so that it doesn't try to read shared credentials from files
     }
     const railsSecrets = {
       DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/password'),
@@ -143,6 +163,9 @@ export class RailsConstruct extends Construct {
     const rakeTaskDefinition = new FargateTaskDefinition(this, 'RakeTaskDefinition', {
       memoryLimitMiB: 2048,
     })
+    // Give nfs access and mount the efs
+    props.appSecurityGroup.connections.allowFrom(props.fileSystem, Port.tcp(2049))
+    props.appSecurityGroup.connections.allowTo(props.fileSystem, Port.tcp(2049))
     rakeTaskDefinition.addVolume({
       name: railsEfsVolumeName,
       efsVolumeConfiguration: {
@@ -191,7 +214,7 @@ export class RailsConstruct extends Construct {
       sourceVolume: railsEfsVolumeName,
       containerPath: '/mnt/honeycomb',
     })
-
+    props.mediaBucket.grantPut(appTaskDefinition.taskRole)
     const nginxImage = AssetHelpers.containerFromDockerfile(stack, 'NginxImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.nginx',
@@ -227,9 +250,6 @@ export class RailsConstruct extends Construct {
         name: 'honeycomb',
       },
     })
-
-    appService.connections.allowFrom(props.fileSystem, Port.tcp(2049))
-    appService.connections.allowTo(props.fileSystem, Port.tcp(2049))
     // End Rails service task
 
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
@@ -252,11 +272,10 @@ export class RailsConstruct extends Construct {
       // This app uses sessions so need to set stickiness
       stickinessCookieDuration: Duration.minutes(10),
     })
-    const domainNameImport = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const albRule = new elbv2.ApplicationListenerRule(this, 'ECSServiceRule3', {
       targetGroups: [targetGroup],
       pathPattern: '*',
-      hostHeader: `${props.hostnamePrefix}.${domainNameImport}`,
+      hostHeader: this.hostname,
       listener: props.publicLoadBalancer.defaultListener,
       priority: 3,
     })

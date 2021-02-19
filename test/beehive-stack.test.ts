@@ -21,12 +21,11 @@ describe('non-production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
-    const beehiveContext = getContextByNamespace('beehive')
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
-      ...beehiveContext,
+      hostnamePrefix: 'MyTestStack-test',
     })
   }
 
@@ -34,7 +33,17 @@ describe('non-production infrastructure', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
       LoggingConfiguration: {
-        LogFilePrefix: 's3/MyTestStack-test',
+        LogFilePrefix: {
+          'Fn::Join': [
+            '',
+            [
+              's3/MyTestStack-test.',
+              {
+                'Fn::ImportValue': 'test-edu-domain:DomainName',
+              },
+            ],
+          ],
+        },
         DestinationBucketName: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0' },
       },
     }))
@@ -126,7 +135,17 @@ describe('non-production infrastructure', () => {
         Logging: {
           Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85RegionalDomainName90114C32' },
           IncludeCookies: true,
-          Prefix: 'web/MyTestStack-test',
+          Prefix: {
+            'Fn::Join': [
+              '',
+              [
+                'web/MyTestStack-test.',
+                {
+                  'Fn::ImportValue': 'test-edu-domain:DomainName',
+                },
+              ],
+            ],
+          },
         },
       },
     }))
@@ -137,7 +156,17 @@ describe('non-production infrastructure', () => {
     expectCDK(newStack).to(haveResource('AWS::Route53::RecordSet', {
       Name: 'MyTestStack-test.test.edu.',
       Type: 'CNAME',
-      Comment: 'MyTestStack-test',
+      Comment: {
+        'Fn::Join': [
+          '',
+          [
+            'MyTestStack-test.',
+            {
+              'Fn::ImportValue': 'test-edu-domain:DomainName',
+            },
+          ],
+        ],
+      },
       HostedZoneId: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputRefHostedZoneDB99F8662BBAE844' },
       ResourceRecords: [
         {
@@ -169,12 +198,12 @@ describe('production infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
-      ...beehiveContext,
+      hostnamePrefix: 'MyTestStack',
     })
   }
 
@@ -182,7 +211,17 @@ describe('production infrastructure', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResource('AWS::S3::Bucket', {
       LoggingConfiguration: {
-        LogFilePrefix: 's3/MyTestStack',
+        LogFilePrefix: {
+          'Fn::Join': [
+            '',
+            [
+              's3/MyTestStack.',
+              {
+                'Fn::ImportValue': 'test-edu-domain:DomainName',
+              },
+            ],
+          ],
+        },
         DestinationBucketName: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputReflogBucket1FE17E857A1D72F0' },
       },
     }))
@@ -216,7 +255,17 @@ describe('production infrastructure', () => {
         Logging: {
           Bucket: { 'Fn::ImportValue': 'MyFoundationStack:ExportsOutputFnGetAttlogBucket1FE17E85RegionalDomainName90114C32' },
           IncludeCookies: true,
-          Prefix: 'web/MyTestStack',
+          Prefix: {
+            'Fn::Join': [
+              '',
+              [
+                'web/MyTestStack.',
+                {
+                  'Fn::ImportValue': 'test-edu-domain:DomainName',
+                },
+              ],
+            ],
+          },
         },
       },
     }))
@@ -240,7 +289,7 @@ describe('do not create dns', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,

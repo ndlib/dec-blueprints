@@ -3,10 +3,14 @@ import { SecurityGroup } from '@aws-cdk/aws-ec2'
 import { FoundationStack } from '../foundation-stack'
 import { Construct, RemovalPolicy, Stack } from '@aws-cdk/core'
 import { FileSystem, LifecyclePolicy } from '@aws-cdk/aws-efs'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 import { CustomEnvironment } from '../custom-environment'
 import { SolrConstruct } from './solr-construct'
 import { RabbitMqConstruct } from './rabbitmq-construct'
 import { RailsConstruct } from './rails-construct'
+import { HoneypotStack } from '../honeypot-stack'
+import { BuzzStack } from '../buzz/buzz-stack'
+import { BeehiveStack } from '../beehive-stack'
 
 export interface HoneycombStackProps extends SharedServiceStackProps {
   /**
@@ -23,6 +27,10 @@ export interface HoneycombStackProps extends SharedServiceStackProps {
    * The foundation to build this stack on top of
    */
   readonly foundationStack: FoundationStack
+
+  readonly honeypotStack: HoneypotStack
+  readonly buzzStack: BuzzStack
+  readonly beehiveStack: BeehiveStack
 
   /**
    * Hostname to use when adding to the public facing load balancer and dns
@@ -73,9 +81,14 @@ export class HoneycombStack extends Stack {
       appDirectory: props.appDirectory,
       hostnamePrefix: props.hostnamePrefix,
       appSecurityGroup,
+      databaseSecurityGroup: props.foundationStack.databaseSecurityGroup,
       fileSystem,
       solr,
       rabbitMq,
+      honeypot: props.honeypotStack,
+      buzz: props.buzzStack,
+      beehive: props.beehiveStack,
+      mediaBucket: props.foundationStack.mediaBucket,
     })
   }
 }
