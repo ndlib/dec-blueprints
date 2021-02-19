@@ -25,7 +25,7 @@ describe('non-production infrastructure', () => {
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     return new BuzzStack(app, 'MyBuzzStack', {
       env,
       foundationStack,
@@ -40,19 +40,6 @@ describe('non-production infrastructure', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResource('AWS::EC2::SecurityGroup', {
       VpcId: { 'Fn::ImportValue': 'test-network:VPCID' },
-    }))
-  })
-
-  test('puts proper ACM certificate on load balancer', () => {
-    const newStack = stack()
-    expectCDK(newStack).to(haveResource('AWS::ElasticLoadBalancingV2::Listener', {
-      Certificates: [
-        {
-          CertificateArn: {
-            'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
-          },
-        },
-      ],
     }))
   })
 
@@ -112,7 +99,7 @@ describe('production infrastructure', () => {
       alarmsEmail: 'test@test.edu',
     }
     const buzzContext = getContextByNamespace('buzz')
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     return new BuzzStack(app, 'MyBuzzStack', {
       env,
       name: 'prod',

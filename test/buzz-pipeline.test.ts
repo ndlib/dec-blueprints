@@ -1,10 +1,11 @@
-import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, Capture } from '@aws-cdk/assert'
+import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, Capture, encodedJson } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { BuzzPipelineStack, CDPipelineStackProps } from '../src/buzz/buzz-pipeline'
 import { FoundationStack } from '../src/foundation-stack'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
 import { CustomEnvironment } from '../src/custom-environment'
+import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import helpers = require('../test/helpers')
 
 // A set of variables that won't get set until used
@@ -12,6 +13,7 @@ interface lazyEvals {
   env: CustomEnvironment
   app: cdk.App
   foundationStack: FoundationStack
+  pipelineFoundationStack: PipelineFoundationStack
   subject: BuzzPipelineStack
   pipelineProps: CDPipelineStackProps
 }
@@ -38,7 +40,8 @@ describe('BuzzPipeline', () => {
     alarmsEmail: 'test.env.alarmsEmail',
   }))
   lazyEval('app', () => new cdk.App())
-  lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env }))
+  lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env, honeycombHostnamePrefix: 'honeycomb-test' }))
+  lazyEval('pipelineFoundationStack', () => new PipelineFoundationStack(lazyEval.app, 'MyPipelineFoundationStack', { env: lazyEval.env }))
   lazyEval('pipelineProps', () => ({
     env: lazyEval.env,
     appRepoOwner: 'test.pipelineProp.appRepoOwner',
@@ -47,7 +50,9 @@ describe('BuzzPipeline', () => {
     infraRepoOwner: 'test.pipelineProp.infraRepoOwner',
     infraRepoName: 'test.pipelineProp.infraRepoName',
     infraSourceBranch: 'test.pipelineProp.infraSourceBranch',
-    foundationStack: lazyEval.foundationStack,
+    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
+    testFoundationStack: lazyEval.foundationStack,
+    prodFoundationStack: lazyEval.foundationStack,
     namespace: 'test.pipelineProp.namespace',
     oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
@@ -74,7 +79,7 @@ describe('BuzzPipeline', () => {
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/buzz/sg_database_connect',
+          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
         ],
       },
     },
@@ -98,7 +103,7 @@ describe('BuzzPipeline', () => {
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/buzz/sg_database_connect',
+          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
         ],
       },
     },
@@ -106,7 +111,25 @@ describe('BuzzPipeline', () => {
   })
 
   test('test stage runs smoke tests that make requests to the test host, and over https', () => {
-    const buildSpec = Capture.anyType()
+    // First make sure that the action sets a TARGET_HOST variable in the env to be the correct host name
+    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', {
+      Stages: arrayWith(objectLike({
+        Name: 'Test',
+        Actions: arrayWith(objectLike({
+          Name: 'SmokeTests',
+          Configuration: objectLike({
+            EnvironmentVariables: encodedJson([{
+              name: 'TARGET_HOST',
+              type: 'PLAINTEXT',
+              value: 'test.pipelineProp.hostnamePrefix-test.test.env.domainName',
+            }]),
+          }),
+        })),
+      })),
+    }))
+
+    // Then make sure that the build command runs newman with the same TARGET_HOST as the app-host
+    const buildCommands = Capture.anyType()
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       ServiceRole: {
         'Fn::GetAtt': [
@@ -115,35 +138,17 @@ describe('BuzzPipeline', () => {
         ],
       },
       Source: {
-        BuildSpec: buildSpec.capture(),
+        BuildSpec: encodedJson(objectLike({
+          phases: objectLike({
+            build: {
+              commands: buildCommands.capture(),
+            },
+          }),
+        })),
       },
     }))
-    // The BuildSpec will look something like:
-    // BuildSpec: {
-    //   "Fn::Join": [
-    //     "",
-    //     [
-    //       "{\n  \"phases\": {\n    \"build\": {\n      \"commands\": [\n        \"newman run spec/postman/spec.json --env-var app-host=test.pipelineProp.hostnamePrefix-test.",
-    //       {
-    //         "Fn::ImportValue": "test.env.domainStackName:DomainName"
-    //       },
-    //       " --env-var host-protocol=https\"\n      ]\n    }\n  },\n  \"version\": \"0.2\"\n}"
-    //     ]
-    //   ]
-    // }
-    // The encoded JSON is broken up by the domain importValue join arg. So this is to do a little
-    // manipulation to substitute that into a string we can easily parse into a JSON and THEN compare
-    // the build phase commands
-    const joinArgs = buildSpec.capturedValue['Fn::Join'][1]
-    const stringifiedPhases = joinArgs[0] + joinArgs[1]['Fn::ImportValue'] + joinArgs[2]
-    const phasesObject = JSON.parse(stringifiedPhases).phases
-    // We expect it to set the app-host env variable to be the concatenation of three things:
-    //  - The hostname prefix that was passed into the pipeline
-    //  - '-test'
-    //  - the DomainName imported from the domain stack
-    const expectedAppHost = `${lazyEval.pipelineProps.hostnamePrefix}-test.${lazyEval.env.domainStackName}:DomainName`
-    const regex = new RegExp(`newman run .* --env-var app-host=${expectedAppHost} --env-var host-protocol=https`)
-    expect(phasesObject.build.commands).toContainEqual(expect.stringMatching(regex))
+    const regex = /newman run .* --env-var app-host=\${TARGET_HOST} --env-var host-protocol=https/
+    expect(buildCommands.capturedValue[0]).toEqual(expect.stringMatching(regex))
   })
 
   test('smoke tests uses the newman image and gets dockerhub credentials from context', () => {
@@ -284,6 +289,10 @@ describe('BuzzPipeline', () => {
           objectLike({
             Name: 'Deploy',
             RunOrder: 2,
+          }),
+          objectLike({
+            Name: 'SmokeTests',
+            RunOrder: 98,
           }),
         ],
       })),
