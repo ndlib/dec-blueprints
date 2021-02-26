@@ -11,7 +11,7 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
-import { FoundationStack } from '../foundation-stack'
+import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 import { DockerhubImage } from '../dockerhub-image'
 import cdk = require('@aws-cdk/core')
 
@@ -33,7 +33,7 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
-  readonly foundationStack: FoundationStack
+  readonly foundationStack: PipelineFoundationStack
 }
 
 // Adds permissions required to deploy this service
