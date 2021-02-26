@@ -4,6 +4,27 @@ import { FoundationStack } from '../src/foundation-stack'
 import helpers = require('../test/helpers')
 
 describe('FoundationStack', () => {
+  const stack = () => {
+    const app = new cdk.App()
+    return new FoundationStack(app, 'MyTestStack', {
+      env: {
+        name: 'test',
+        domainName: 'test.edu',
+        domainStackName: 'test-edu-domain',
+        networkStackName: 'test-network',
+        region: 'test-region',
+        account: 'test-account',
+        createDns: true,
+        slackNotifyStackName: 'slack-test',
+        createGithubWebhooks: false,
+        useExistingDnsZone: true,
+        notificationReceivers: 'test@test.edu',
+        alarmsEmail: 'test@test.edu',
+      },
+      honeycombHostnamePrefix: 'honeycomb-test',
+    })
+  }
+
   describe('when useExistingDnsZone is true', () => {
     beforeEach(() => {
       helpers.mockHostedZoneFromLookup()
@@ -26,6 +47,7 @@ describe('FoundationStack', () => {
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
         },
+        honeycombHostnamePrefix: 'honeycomb-test',
       })
     }
 
@@ -90,6 +112,7 @@ describe('FoundationStack', () => {
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
         },
+        honeycombHostnamePrefix: 'honeycomb-test',
       })
     }
 
@@ -135,5 +158,18 @@ describe('FoundationStack', () => {
         }))
       })
     })
+  })
+
+  test('puts proper ACM certificate on load balancer', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::ElasticLoadBalancingV2::Listener', {
+      Certificates: [
+        {
+          CertificateArn: {
+            'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
+          },
+        },
+      ],
+    }))
   })
 })

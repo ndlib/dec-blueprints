@@ -8,6 +8,9 @@ import { SecurityGroup } from '@aws-cdk/aws-ec2'
 import { SolrConstruct } from '../../src/honeycomb/solr-construct'
 import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
 import * as helpers from '../helpers'
+import { HoneypotStack } from '../../src/honeypot-stack'
+import { BuzzStack } from '../../src/buzz/buzz-stack'
+import { BeehiveStack } from '../../src/beehive-stack'
 
 describe('RailsConstruct', () => {
   let rabbitMq: RabbitMqConstruct
@@ -29,7 +32,7 @@ describe('RailsConstruct', () => {
     }
     const app = new cdk.App()
     const stack = new Stack(app, 'MyStack', { env })
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const appSecurityGroup = new SecurityGroup(stack, 'MyAppSecurityGroup', {
       vpc: foundationStack.vpc,
     })
@@ -51,6 +54,24 @@ describe('RailsConstruct', () => {
       appSecurityGroup,
       brokerName: 'my-rabbit-broker-name',
     })
+    const honeypot = new HoneypotStack(stack, 'MyHoneypotStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
+    })
+    const buzz = new BuzzStack(stack, 'MyBuzzStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
+
+    })
+    const beehive = new BeehiveStack(stack, 'MyBeehiveStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+    })
     const rails = new RailsConstruct(stack, 'MyRails', {
       env,
       vpc: foundationStack.vpc,
@@ -62,8 +83,13 @@ describe('RailsConstruct', () => {
       hostnamePrefix: 'my-rails-host',
       appSecurityGroup,
       fileSystem,
+      databaseSecurityGroup: foundationStack.databaseSecurityGroup,
       solr,
       rabbitMq,
+      honeypot,
+      buzz,
+      beehive,
+      mediaBucket: foundationStack.mediaBucket,
     })
     return stack
   }
@@ -89,7 +115,7 @@ describe('RailsConstruct', () => {
       NetworkConfiguration: {
         AwsvpcConfiguration: {
           SecurityGroups: [
-            'dummy-value-for-/all/MyStack/sg_database_connect',
+            'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
             {
               'Fn::GetAtt': [
                 'MyAppSecurityGroup325F274B',

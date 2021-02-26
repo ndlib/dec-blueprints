@@ -10,6 +10,7 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    * permissions to create change sets on these stacks.
    */
   readonly targetStack: string;
+
   /**
    * The stack names that the target stack will depend on. Will add permissions
    * to also create change sets on these stacks. Note: This can be ignored

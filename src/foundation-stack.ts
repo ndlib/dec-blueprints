@@ -1,29 +1,35 @@
 import * as cdk from '@aws-cdk/core'
-import { Bucket, BucketAccessControl, BucketEncryption } from '@aws-cdk/aws-s3'
+import { Bucket, BucketAccessControl, HttpMethods } from '@aws-cdk/aws-s3'
 import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-certificatemanager'
-import { Vpc } from '@aws-cdk/aws-ec2'
+import { ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
 import { CustomEnvironment } from './custom-environment'
 import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
-
 import { Cluster } from '@aws-cdk/aws-ecs'
+import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface FoundationStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment
+
+  /**
+   * The hostname for honeycomb to add as an allowed origin in the media bucket
+   */
+  readonly honeycombHostnamePrefix: string
 }
 
 export class FoundationStack extends cdk.Stack {
   public readonly vpc: Vpc
   public readonly logBucket: Bucket
-  public readonly artifactBucket: Bucket
   public readonly certificate: ICertificate
   public readonly hostedZone: IHostedZone
   public readonly logs: LogGroup
   public readonly publicLoadBalancer: HttpsAlb
   public readonly cluster: Cluster
   public readonly privateNamespace: PrivateDnsNamespace
+  public readonly mediaBucket: Bucket
+  public readonly databaseSecurityGroup: ISecurityGroup
 
   constructor (scope: cdk.Construct, id: string, props: FoundationStackProps) {
     super(scope, id, props)
@@ -92,9 +98,19 @@ export class FoundationStack extends cdk.Stack {
       description: 'Private Namespace for DEC',
     })
 
-    this.artifactBucket = new Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+    // TODO: Add CORS
+    this.mediaBucket = new Bucket(this, 'mediaBucket', {
+      publicReadAccess: true,
+      cors: [{
+        allowedHeaders: ['*'],
+        allowedMethods: [HttpMethods.GET, HttpMethods.PUT, HttpMethods.POST],
+        allowedOrigins: [`https://${props.honeycombHostnamePrefix}.${props.env.domainName}`],
+        exposedHeaders: ['ETag'],
+        maxAge: 3000,
+      }],
     })
+
+    const databaseSecurityGroupParameter = StringParameter.valueFromLookup(this, `/all/${this.stackName}/sg_database_connect`)
+    this.databaseSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', databaseSecurityGroupParameter)
   }
 }

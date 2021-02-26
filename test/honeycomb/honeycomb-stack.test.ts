@@ -7,6 +7,9 @@ import { SolrConstruct } from '../../src/honeycomb/solr-construct'
 import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
 import { RailsConstruct } from '../../src/honeycomb/rails-construct'
 import { CustomEnvironment } from '../../src/custom-environment'
+import { HoneypotStack } from '../../src/honeypot-stack'
+import { BuzzStack } from '../../src/buzz/buzz-stack'
+import { BeehiveStack } from '../../src/beehive-stack'
 
 jest.mock('../../src/honeycomb/solr-construct')
 const MockedSolrConstruct = mocked(SolrConstruct)
@@ -41,12 +44,34 @@ describe('HoneycombStack', () => {
       alarmsEmail: 'test@test.edu',
     }
     app = new cdk.App()
-    foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
+
+    const honeypotStack = new HoneypotStack(app, 'MyHoneypotStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
+    })
+    const buzzStack = new BuzzStack(app, 'MyBuzzStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
+
+    })
+    const beehiveStack = new BeehiveStack(app, 'MyBeehiveStack', {
+      foundationStack,
+      env,
+      hostnamePrefix: 'honeypot-test',
+    })
     subject = new HoneycombStack(app, 'MyTestHoneycombStack', {
       env,
       appDirectory,
       foundationStack,
       hostnamePrefix,
+      honeypotStack,
+      buzzStack,
+      beehiveStack,
     })
   })
 
