@@ -60,5 +60,7 @@
   },
   "ssm:account=333680067100:parameterName=/all/jg-dec-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
   "ssm:account=333680067100:parameterName=/all/jg-dec-prod-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
-  "ssm:account=333680067100:parameterName=/all/jg-dec-test-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71"
+  "ssm:account=333680067100:parameterName=/all/jg-dec-test-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
+  "ssm:account=333680067100:parameterName=/all/wsill-dec-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
+  "ssm:account=333680067100:parameterName=/all/wsill-dec-test-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71"
 }
