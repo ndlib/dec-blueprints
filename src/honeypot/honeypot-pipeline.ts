@@ -55,14 +55,6 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     actions: ['iam:PassRole'],
   }))
 
-  deploy.project.addToRolePolicy(new PolicyStatement({
-    resources: [cdk.Fn.sub('arn:aws:route53:::hostedzone/*')],
-    actions: [
-      'route53:GetHostedZone',
-      'route53:ChangeResourceRecordSets',
-    ],
-  }))
-
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
