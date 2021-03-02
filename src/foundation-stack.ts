@@ -99,7 +99,7 @@ export class FoundationStack extends cdk.Stack {
     })
 
     // TODO: Add CORS
-    this.mediaBucket = new Bucket(this, 'mediaBucket', {
+    this.mediaBucket = new Bucket(this, 'PublicBucket', {
       publicReadAccess: true,
       cors: [{
         allowedHeaders: ['*'],
