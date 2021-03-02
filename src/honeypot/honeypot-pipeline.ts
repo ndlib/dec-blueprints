@@ -1,14 +1,12 @@
 import { Fn, Stack } from '@aws-cdk/core'
 import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
@@ -33,7 +31,7 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly createDns: boolean;
   readonly slackNotifyStackName?: string;
   readonly notificationReceivers?: string;
-  readonly foundationStack: PipelineFoundationStack
+  readonly pipelineFoundationStack: PipelineFoundationStack;
 }
 
 // Adds permissions required to deploy this service
@@ -56,6 +54,12 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
+
+  deploy.project.addToRolePolicy(new PolicyStatement({
+    resources: [cdk.Fn.sub('arn:aws:route53:::hostedzone/*')],
+    actions: ['route53:GetHostedZone'],
+  }))
+
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
@@ -205,7 +209,7 @@ export class HoneypotPipelineStack extends Stack {
 
     // Pipeline
     const pipeline = new Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket: props.foundationStack.artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSourceAction, infraSourceAction],
