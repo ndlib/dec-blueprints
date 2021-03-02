@@ -35,7 +35,10 @@ export class NamespacedPolicy {
       ]
     }
     if (actionOptions.includes(GlobalActions.Route53)) {
-      actions.push('route53:ListHostedZones')
+      actions = [...actions,
+        'route53:ListHostedZones',
+        'route53:GetHostedZone',
+      ]      
     }
     if (actionOptions.includes(GlobalActions.ECR)) {
       actions = [...actions,
