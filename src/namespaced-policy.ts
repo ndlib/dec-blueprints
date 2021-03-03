@@ -79,6 +79,7 @@ export class NamespacedPolicy {
         'elasticfilesystem:UntagResource',
         'elasticfilesystem:TagResource',
         'elasticfilesystem:DescribeFileSystemPolicy',
+        'elasticfilesystem:PutLifecycleConfiguration',
       ]
     }
     if (actionOptions.includes(GlobalActions.AutoScaling)) {
