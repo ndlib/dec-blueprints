@@ -76,7 +76,7 @@ export class NamespacedPolicy {
         'elasticfilesystem:DescribeFileSystems',
         'elasticfilesystem:CreateFileSystem',
         'elasticfilesystem:CreateMountTarget',
-        'elasticfilesystem:DescribeMountTarget',
+        'elasticfilesystem:DescribeMountTargets',
         'elasticfilesystem:ListTagsForResource',
         'elasticfilesystem:UntagResource',
         'elasticfilesystem:TagResource',
