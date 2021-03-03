@@ -39,7 +39,7 @@ export class NamespacedPolicy {
         'route53:ListHostedZones',
         'route53:GetHostedZone',
         'route53:ChangeResourceRecordSets',
-        'route53:GetChange',
+        'route53:GetChangeRequest',
       ]      
     }
     if (actionOptions.includes(GlobalActions.ECR)) {
