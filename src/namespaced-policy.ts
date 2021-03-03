@@ -74,6 +74,7 @@ export class NamespacedPolicy {
     if (actionOptions.includes(GlobalActions.EFS)) {
       actions = [...actions,
         'elasticfilesystem:DescribeFileSystems',
+        'elasticfilesystem:ListTagsForResource',
       ]
     }
     if (actionOptions.includes(GlobalActions.AutoScaling)) {
