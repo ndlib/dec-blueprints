@@ -10,6 +10,7 @@ export enum GlobalActions {
   EC2,
   ECS,
   ALB,
+  EFS,
   AutoScaling,
 }
 
@@ -68,6 +69,11 @@ export class NamespacedPolicy {
         'elasticloadbalancing:DescribeTargetGroups',
         'elasticloadbalancing:DescribeListeners',
         'elasticloadbalancing:DescribeRules',
+      ]
+    }    
+    if (actionOptions.includes(GlobalActions.EFS)) {
+      actions = [...actions,
+        'elasticfilesystem:DescribeFileSystems',
       ]
     }
     if (actionOptions.includes(GlobalActions.AutoScaling)) {
