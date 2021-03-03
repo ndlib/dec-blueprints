@@ -41,6 +41,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     GlobalActions.ECS,
     GlobalActions.EC2,
     GlobalActions.ALB,
+    GlobalActions.Route53,
     GlobalActions.AutoScaling,
   ]))
   deploy.project.addToRolePolicy(NamespacedPolicy.securityGroups())
