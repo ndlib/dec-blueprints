@@ -75,6 +75,7 @@ export class NamespacedPolicy {
       actions = [...actions,
         'elasticfilesystem:DescribeFileSystems',
         'elasticfilesystem:CreateFileSystem',
+        'elasticfilesystem:CreateMountTarget',
         'elasticfilesystem:ListTagsForResource',
         'elasticfilesystem:UntagResource',
         'elasticfilesystem:TagResource',
