@@ -2,10 +2,9 @@ import { App } from '@aws-cdk/core'
 import { CustomEnvironment } from '../src/custom-environment'
 import { Stacks } from '../src/types'
 import { getContextByNamespace } from '../src/context-helpers'
-import { FoundationStack } from '../src/foundation-stack'
-import { BuzzStack } from '../src/buzz/buzz-stack'
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
 import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
+import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
@@ -35,5 +34,11 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...commonProps,
     ...buzzContext,
   })
-  return { buzzPipelineStack }
+
+  const honeycombContext = getContextByNamespace('honeycomb')
+  const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
+    ...commonProps,
+    ...honeycombContext,
+  })
+  return { buzzPipelineStack, honeycombPipelineStack }
 }

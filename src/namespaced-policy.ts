@@ -1,5 +1,5 @@
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Fn, Stack } from '@aws-cdk/core'
+import { CfnCondition, Fn, Stack } from '@aws-cdk/core'
 
 export enum GlobalActions {
   None,
@@ -10,7 +10,11 @@ export enum GlobalActions {
   EC2,
   ECS,
   ALB,
+  EFS,
   AutoScaling,
+  Secrets,
+  MQ,
+  CloudMap,
 }
 
 export class NamespacedPolicy {
@@ -45,8 +49,7 @@ export class NamespacedPolicy {
     }
     if (actionOptions.includes(GlobalActions.EC2)) {
       actions = [...actions,
-        'ec2:CreateSecurityGroup',
-        'ec2:DescribeSecurityGroups',
+        'ec2:Describe*',
       ]
     }
     if (actionOptions.includes(GlobalActions.ECS)) {
@@ -64,8 +67,47 @@ export class NamespacedPolicy {
         'elasticloadbalancing:DescribeRules',
       ]
     }
+    if (actionOptions.includes(GlobalActions.EFS)) {
+      actions = [...actions,
+        'elasticfilesystem:CreateFileSystem',
+      ]
+    }
     if (actionOptions.includes(GlobalActions.AutoScaling)) {
       actions.push('application-autoscaling:*')
+    }
+    if (actionOptions.includes(GlobalActions.Secrets)) {
+      actions = [...actions,
+        'secretsmanager:GetRandomPassword',
+        'secretsmanager:ListSecrets',
+      ]
+    }
+    if (actionOptions.includes(GlobalActions.MQ)) {
+      actions = [...actions,
+        'mq:CreateBroker',
+        'mq:CreateTags',
+        'mq:CreateConfiguration',
+        'mq:DeleteTags',
+        'mq:DescribeBrokerEngineTypes',
+        'mq:DescribeBrokerInstanceOptions',
+        'mq:ListBrokers',
+        'mq:ListConfigurations',
+      ]
+    }
+    if (actionOptions.includes(GlobalActions.CloudMap)) {
+      actions = [...actions,
+        'servicediscovery:CreateHttpNamespace',
+        'servicediscovery:CreatePrivateDnsNamespace',
+        'servicediscovery:CreatePublicDnsNamespace',
+        'servicediscovery:CreateService',
+        'servicediscovery:GetOperation',
+        'servicediscovery:GetService',
+        'servicediscovery:ListNamespaces',
+        'servicediscovery:ListOperations',
+        'servicediscovery:ListServices',
+        'servicediscovery:ListTagsForResource',
+        'servicediscovery:TagResource',
+        'servicediscovery:UntagResource',
+      ]
     }
     return new PolicyStatement({
       resources: ['*'],
@@ -89,16 +131,69 @@ export class NamespacedPolicy {
   }
 
   // This is also resource-type specific, but can't do a namespace
-  public static securityGroups (): PolicyStatement {
+  public static cloudmap (): PolicyStatement {
     return new PolicyStatement({
-      resources: [Fn.sub('arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*')],
+      resources: [
+        Fn.sub('arn:aws:servicediscovery:${AWS::Region}:${AWS::AccountId}:namespace/*'),
+        Fn.sub('arn:aws:servicediscovery:${AWS::Region}:${AWS::AccountId}:service/*'),
+      ],
+      actions: [
+        'servicediscovery:*',
+      ],
+    })
+  }
+
+  // This is also resource-type specific, but can't do a namespace
+  public static efs (): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/*'),
+        Fn.sub('arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:access-point/*'),
+      ],
+      actions: [
+        'elasticfilesystem:*',
+      ],
+    })
+  }
+
+  // This is also resource-type specific, but can't do a namespace
+  public static ec2 (): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:instance/*'),
+        Fn.sub('arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:network-interface/*'),
+        Fn.sub('arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'),
+        Fn.sub('arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/*'),
+      ],
       actions: [
         'ec2:createTags',
+        'ec2:DetachNetworkInterface',
+        'ec2:DeleteNetworkInterface',
         'ec2:AuthorizeSecurityGroupEgress',
         'ec2:AuthorizeSecurityGroupIngress',
+        'ec2:CreateSecurityGroup',
         'ec2:DeleteSecurityGroup',
         'ec2:RevokeSecurityGroupEgress',
         'ec2:RevokeSecurityGroupIngress',
+      ],
+    })
+  }
+
+  public static transform (): PolicyStatement {
+    return new PolicyStatement({
+      resources: [Fn.sub('arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31')],
+      actions: ['cloudformation:CreateChangeSet'],
+    })
+  }
+
+  public static mq (nameSpace: string): PolicyStatement {
+    return new PolicyStatement({
+      resources: [
+        Fn.sub('arn:aws:mq:${AWS::Region}:${AWS::AccountId}:broker:' + nameSpace + '*'),
+        Fn.sub('arn:aws:mq:${AWS::Region}:${AWS::AccountId}:configuration:' + nameSpace + '*'),
+      ],
+      actions: [
+        'mq:*',
       ],
     })
   }
@@ -142,13 +237,6 @@ export class NamespacedPolicy {
     })
   }
 
-  public static transform (): PolicyStatement {
-    return new PolicyStatement({
-      resources: [Fn.sub('arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31')],
-      actions: ['cloudformation:CreateChangeSet'],
-    })
-  }
-
   public static route53RecordSet (zone: string): PolicyStatement {
     return new PolicyStatement({
       actions: [
@@ -172,6 +260,17 @@ export class NamespacedPolicy {
       resources: [
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/' + nameSpace + '/*'),
         Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/*'),
+      ],
+    })
+  }
+
+  public static secrets (nameSpace: string): PolicyStatement {
+    return new PolicyStatement({
+      actions: [
+        'secretsmanager:*',
+      ],
+      resources: [
+        Fn.sub('arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:/all/' + nameSpace + '*'),
       ],
     })
   }
@@ -224,6 +323,17 @@ export class NamespacedPolicy {
       ],
       resources: [
         Fn.sub('arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/' + nameSpace + '*'),
+      ],
+    })
+  }
+
+  public static cloudwatch (nameSpace: string): PolicyStatement {
+    return new PolicyStatement({
+      actions: [
+        'cloudwatch:*',
+      ],
+      resources: [
+        Fn.sub('arn:aws:cloudwatch:${AWS::Region}:${AWS::AccountId}:alarm:' + nameSpace + '*'),
       ],
     })
   }

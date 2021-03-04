@@ -1,7 +1,7 @@
 import * as cdk from '@aws-cdk/core'
 import {
   AwsLogDriver,
-  Cluster,
+  FargatePlatformVersion,
   FargateService,
   FargateTaskDefinition,
 } from '@aws-cdk/aws-ecs'
@@ -71,12 +71,12 @@ export class BuzzStack extends cdk.Stack {
       },
       secrets: {
         RAILS_ENV: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rails-env'),
-        RDS_PORT: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/port'),
-        RDS_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/username'),
-        RDS_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/password'),
-        RDS_DB_NAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/database'),
-        RDS_HOSTNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/host'),
-        RAILS_SECRET_KEY_BASE: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rails-secret-key-base'),
+        DB_PORT: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/port'),
+        DB_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/username'),
+        DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/password'),
+        DB_NAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/database'),
+        DB_HOSTNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/host'),
+        RAILS_SECRET_KEY_BASE: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/secret_key_base'),
       },
     })
     rails.addPortMappings({
@@ -85,6 +85,7 @@ export class BuzzStack extends cdk.Stack {
 
     appTaskDefinition.defaultContainer = rails
     const appService = new FargateService(this, 'AppService', {
+      platformVersion: FargatePlatformVersion.VERSION1_4,
       taskDefinition: appTaskDefinition,
       cluster: props.foundationStack.cluster,
       vpcSubnets: { subnetType: SubnetType.PRIVATE },
