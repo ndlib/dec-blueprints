@@ -61,10 +61,10 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/wsill-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/wsill-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/wsill-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/wsill-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0, 5) + '-*/*'),
+      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0, 5) + '-*/*'),
     ],
     actions: [
       'elasticloadbalancing:AddTags',
