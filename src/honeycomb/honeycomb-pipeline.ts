@@ -1,7 +1,6 @@
-import { Fn, Names, Stack } from '@aws-cdk/core'
+import { Construct, Fn, SecretValue, Stack, StackProps } from '@aws-cdk/core'
 import { BuildSpec, BuildEnvironmentVariableType, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
@@ -14,9 +13,8 @@ import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { DockerhubImage } from '../dockerhub-image'
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
-import cdk = require('@aws-cdk/core')
 
-export interface CDPipelineStackProps extends cdk.StackProps {
+export interface CDPipelineStackProps extends StackProps {
   readonly env: CustomEnvironment;
   readonly appRepoOwner: string;
   readonly appRepoName: string;
@@ -48,7 +46,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
       'ecr:BatchCheckLayerAvailability',
     ],
     resources: [
-      cdk.Fn.sub('arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/aws-cdk/assets'),
+      Fn.sub('arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/aws-cdk/assets'),
     ],
   }))
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
@@ -73,7 +71,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
   deploy.project.addToRolePolicy(NamespacedPolicy.secrets(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.cloudwatch(namespace))
   deploy.project.addToRolePolicy(new PolicyStatement({
-    resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
+    resources: [Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
   deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
@@ -81,10 +79,10 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
     resources: [
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0, 5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0, 5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0, 5) + '-*/*'),
-      cdk.Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0, 5) + '-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:targetgroup/' + namespace.substring(0, 5) + '-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:loadbalancer/app/' + namespace.substring(0, 5) + '-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener/app/' + namespace.substring(0, 5) + '-*/*'),
+      Fn.sub('arn:aws:elasticloadbalancing:${AWS::Region}:${AWS::AccountId}:listener-rule/app/' + namespace.substring(0, 5) + '-*/*'),
     ],
     actions: [
       'elasticloadbalancing:*',
@@ -93,7 +91,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
 }
 
 export class HoneycombPipelineStack extends Stack {
-  constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
+  constructor (scope: Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
     // Source Actions
@@ -101,7 +99,7 @@ export class HoneycombPipelineStack extends Stack {
     const appSourceAction = new GitHubSourceAction({
       actionName: 'AppCode',
       branch: props.appSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
@@ -110,7 +108,7 @@ export class HoneycombPipelineStack extends Stack {
     const infraSourceAction = new GitHubSourceAction({
       actionName: 'InfraCode',
       branch: props.infraSourceBranch,
-      oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
+      oauthToken: SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
       output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
