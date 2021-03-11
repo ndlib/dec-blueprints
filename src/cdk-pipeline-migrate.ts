@@ -1,4 +1,4 @@
-import { BuildSpec, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, BuildEnvironmentVariable, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import { SecurityGroup } from '@aws-cdk/aws-ec2'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
@@ -39,7 +39,11 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
     /**
      * A Foundation Stack that contains VPC information
      */
-    readonly foundationStack: FoundationStack
+    readonly foundationStack: FoundationStack;
+
+    readonly premigrateCommands?: string[];
+
+    readonly additionalEnvironmentVariables?: { [name: string]: BuildEnvironmentVariable };
   }
 
 export class RailsMigration extends Construct {
@@ -71,23 +75,23 @@ export class RailsMigration extends Construct {
           privileged: true,
         },
         environmentVariables: {
-          RDS_HOSTNAME: {
+          DB_HOSTNAME: {
             value: `/all/${props.ssmPrefix}/database/host`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
-          RDS_DB_NAME: {
+          DB_NAME: {
             value: `/all/${props.ssmPrefix}/database/database`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
-          RDS_USERNAME: {
+          DB_USERNAME: {
             value: `/all/${props.ssmPrefix}/database/username`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
-          RDS_PASSWORD: {
+          DB_PASSWORD: {
             value: `/all/${props.ssmPrefix}/database/password`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
-          RDS_PORT: {
+          DB_PORT: {
             value: `/all/${props.ssmPrefix}/database/port`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
@@ -96,9 +100,10 @@ export class RailsMigration extends Construct {
             type: BuildEnvironmentVariableType.PLAINTEXT,
           },
           RAILS_SECRET_KEY_BASE: {
-            value: `/all/${props.ssmPrefix}/rails-secret-key-base`,
+            value: `/all/${props.ssmPrefix}/secrets/secret_key_base`,
             type: BuildEnvironmentVariableType.PARAMETER_STORE,
           },
+          ...props.additionalEnvironmentVariables,
         },
         buildSpec: BuildSpec.fromObject({
           phases: {
@@ -108,6 +113,9 @@ export class RailsMigration extends Construct {
                 'gem install bundler -v 1.17.3',
                 'bundle install',
               ],
+            },
+            pre_build: {
+              commands: props.premigrateCommands,
             },
             build: {
               commands: [
@@ -124,6 +132,16 @@ export class RailsMigration extends Construct {
       this.project.addToRolePolicy(new PolicyStatement({
         actions: ['logs:DescribeLogGroups'],
         resources: ['*'],
+      }))
+
+      this.project.addToRolePolicy(new PolicyStatement({
+        actions: [
+          'ssm:GetParameter',
+          'ssm:GetParameters',
+        ],
+        resources: [
+          Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/all/' + props.ssmPrefix + '/*'),
+        ],
       }))
 
       this.action = new CodeBuildAction({

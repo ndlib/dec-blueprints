@@ -138,6 +138,13 @@ export class CDKPipelineDeploy extends Construct {
       ...props,
     })
 
+    this.project.addToRolePolicy(new PolicyStatement({
+      actions: ['ssm:GetParameters'],
+      resources: [
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/token'),
+        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/username')],
+    }))
+
     // CDK will try to read logs when generating output for failed events
     this.project.addToRolePolicy(new PolicyStatement({
       actions: ['logs:DescribeLogGroups'],
@@ -166,7 +173,6 @@ export class CDKPipelineDeploy extends Construct {
       resources: [Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/CDKToolkit/*')],
     }))
     this.project.addToRolePolicy(new PolicyStatement({
-      // TODO: Is there a way to get the bucket name?
       actions: [
         's3:ListBucket',
         's3:GetObject',

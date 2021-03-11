@@ -41,7 +41,7 @@ aws ssm put-parameter --region us-east-1 --type 'String' --name "/all/${namespac
 
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeypot/secret_key_base" --description "Secret key base for verifying signed cookies" --value '<value>'
 
-aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/rails-secret-key-base" --description "Buzz rails secret key base" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/secrets/secret_key_base" --description "Buzz rails secret key base" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/database/database" --description "Buzz database name" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/database/host" --description "Buzz database hostname" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/database/port" --description "Buzz database port" --value '<value>'
@@ -49,11 +49,12 @@ aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${na
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/database/password" --description "Buzz database password" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'String'       --name "/all/${namespace}-buzz/rails-env" --description "Buzz rails environment" --value '<value>'
 
-aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/rails-secret-key-base" --description "Honeycomb rails secret key base" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/secret_key_base" --description "Honeycomb rails secret key base" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/database/database" --description "Honeycomb database name" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/database/host" --description "Honeycomb database hostname" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/database/username" --description "Honeycomb database username" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/database/password" --description "Honeycomb database password" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/database/port" --description "Honeycomb database port" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/okta/client_id" --description "Honeycomb Okta client id" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/okta/client_secret" --description "Honeycomb Okta client secret" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/okta/logout_url" --description "Honeycomb Okta logout url" --value '<value>'
