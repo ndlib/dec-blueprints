@@ -138,10 +138,10 @@ export class RailsConstruct extends Construct {
       AWS_PROFILE: '', // Need to blank this out so that it doesn't try to read shared credentials from files
     }
     const railsSecrets = {
-      DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/password'),
-      DB_HOST: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/host'),
-      DB_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rds/username'),
-      DB_NAME: ECSSecretsHelper.fromSSM(this, 'RaisService', 'rds/database'),
+      DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/password'),
+      DB_HOSTNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/host'),
+      DB_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/username'),
+      DB_NAME: ECSSecretsHelper.fromSSM(this, 'RaisService', 'database/database'),
       OKTA_CLIENT_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/client_id'),
       OKTA_CLIENT_SECRET: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/client_secret'),
       OKTA_LOGOUT_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/okta/logout_url'),
