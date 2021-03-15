@@ -45,7 +45,7 @@ export class NamespacedPolicy {
         'route53:ChangeResourceRecordSets',
         'route53:GetChangeRequest',
         'route53:GetChange',
-      ]      
+      ]
     }
     if (actionOptions.includes(GlobalActions.ECR)) {
       actions = [...actions,
@@ -72,7 +72,7 @@ export class NamespacedPolicy {
         'elasticloadbalancing:DescribeListeners',
         'elasticloadbalancing:DescribeRules',
       ]
-    }    
+    }
     if (actionOptions.includes(GlobalActions.EFS)) {
       actions = [...actions,
         'elasticfilesystem:DescribeFileSystems',
@@ -84,11 +84,6 @@ export class NamespacedPolicy {
         'elasticfilesystem:TagResource',
         'elasticfilesystem:DescribeFileSystemPolicy',
         'elasticfilesystem:PutLifecycleConfiguration',
-      ]
-    }
-    if (actionOptions.includes(GlobalActions.EFS)) {
-      actions = [...actions,
-        'elasticfilesystem:CreateFileSystem',
       ]
     }
     if (actionOptions.includes(GlobalActions.AutoScaling)) {
