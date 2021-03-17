@@ -1,16 +1,19 @@
 import { Fn, Stack } from '@aws-cdk/core'
 import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
+import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
-import { PipelineFoundationStack } from '../pipeline-foundation-stack'
+import { FoundationStack } from '../foundation-stack'
 import { DockerhubImage } from '../dockerhub-image'
+import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
@@ -24,27 +27,24 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly oauthTokenPath: string;
   readonly dockerhubCredentialsPath: string;
-  readonly networkStackName: string;
-  readonly domainStackName: string;
   readonly owner: string;
   readonly contact: string;
-  readonly createDns: boolean;
-  readonly slackNotifyStackName?: string;
-  readonly notificationReceivers?: string;
-  readonly pipelineFoundationStack: PipelineFoundationStack;
+  readonly pipelineFoundationStack: PipelineFoundationStack
+  readonly testFoundationStack: FoundationStack
+  readonly prodFoundationStack: FoundationStack
+  readonly hostnamePrefix: string
 }
 
 // Adds permissions required to deploy this service
-const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
+const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundationStack: FoundationStack) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.globals([
     GlobalActions.ECR,
     GlobalActions.ECS,
     GlobalActions.EC2,
     GlobalActions.ALB,
-    GlobalActions.Route53,
-    GlobalActions.EFS,
     GlobalActions.AutoScaling,
   ]))
+  deploy.project.addToRolePolicy(NamespacedPolicy.ec2())
   deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
@@ -55,7 +55,7 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
     resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
     actions: ['iam:PassRole'],
   }))
-
+  deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(foundationStack.hostedZone.hostedZoneId))
   // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
   // Have to just use a constant prefix regardless of whether its test or prod stack name.
   deploy.project.addToRolePolicy(new PolicyStatement({
@@ -112,11 +112,21 @@ export class HoneypotPipelineStack extends Stack {
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
+    const testStackName = `${testNamespace}-honeycomb`
+
+    // Database Migration Test
+    const migrateTest = new RailsMigration(this, `${props.namespace}-MigrateTest`, {
+      contextEnvName: props.env.name,
+      namespace: testNamespace,
+      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+      appSourceArtifact,
+      ssmPrefix: testStackName,
+      foundationStack: props.testFoundationStack,
+    })
 
     // CDK Deploy Test
-    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const testHostnamePrefix = 'honeypot-test'
-    const testHost = `${testHostnamePrefix}.${resolvedDomain}`
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`
+    const testHost = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-honeypot`,
@@ -136,14 +146,14 @@ export class HoneypotPipelineStack extends Stack {
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
-    addPermissions(deployTest, testNamespace)
+    addPermissions(deployTest, testNamespace, props.testFoundationStack)
 
     const smokeTestsProject = new PipelineProject(this, `${props.namespace}-SmokeTests`, {
       buildSpec: BuildSpec.fromObject({
         phases: {
           build: {
             commands: [
-              `newman run spec/postman/spec.json --env-var app-host=${testHost} --env-var host-protocol=https`,
+              'newman run spec/postman/spec.json --env-var app-host=${TARGET_HOST} --env-var host-protocol=https',
             ],
           },
         },
@@ -158,14 +168,18 @@ export class HoneypotPipelineStack extends Stack {
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
+      environmentVariables: {
+        TARGET_HOST: { value: testHost },
+      },
     })
 
     // Global variables for test space
     const prodNamespace = `${props.namespace}-prod`
+    const prodStackName = `${prodNamespace}-honeycomb`
 
     // CDK Deploy Prod
-    const prodHostnamePrefix = 'honeypot'
-    const prodHost = `${prodHostnamePrefix}.${resolvedDomain}`
+    const prodHostnamePrefix = props.hostnamePrefix
+    const prodHost = `${prodHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
     const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-honeypot`,
@@ -177,15 +191,25 @@ export class HoneypotPipelineStack extends Stack {
       additionalContext: {
         owner: props.owner,
         contact: props.contact,
-        networkStack: props.networkStackName,
-        domainStack: props.domainStackName,
-        createDns: props.createDns ? 'true' : 'false',
+        networkStack: props.env.networkStackName,
+        domainStack: props.env.domainStackName,
+        createDns: props.env.createDns ? 'true' : 'false',
         'honeypot:hostnamePrefix': prodHostnamePrefix,
         'honeypot:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         infraDirectory: '$CODEBUILD_SRC_DIR',
       },
     })
-    addPermissions(deployProd, prodNamespace)
+    addPermissions(deployProd, prodNamespace, props.prodFoundationStack)
+
+    const smokeTestsProd = new CodeBuildAction({
+      input: appSourceArtifact,
+      project: smokeTestsProject,
+      actionName: 'SmokeTests',
+      runOrder: 98,
+      environmentVariables: {
+        TARGET_HOST: { value: prodHost },
+      },
+    })
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
@@ -196,7 +220,7 @@ export class HoneypotPipelineStack extends Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
-    if (props.slackNotifyStackName !== undefined) {
+    if (props.env.slackNotifyStackName !== undefined) {
       const slackApproval = new SlackApproval(this, 'SlackApproval', {
         approvalTopic,
         notifyStackName: props.env.slackNotifyStackName,
@@ -216,20 +240,20 @@ export class HoneypotPipelineStack extends Stack {
           stageName: 'Test',
         },
         {
-          actions: [deployProd.action],
+          actions: [deployProd.action, smokeTestsProd],
           stageName: 'Production',
         },
       ],
     })
 
-    deployTest.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/dec-honeypot/secret_key_base`),
-      ],
-    }))
+    // deployTest.project.addToRolePolicy(new PolicyStatement({
+    //   actions: [
+    //     'ssm:GetParameter',
+    //   ],
+    //   resources: [
+    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/honeypot/sg_database_connect`),
+    //   ],
+    // }))
 
     deployTest.project.addToRolePolicy(new PolicyStatement({
       actions: [
@@ -245,14 +269,14 @@ export class HoneypotPipelineStack extends Stack {
       ],
     }))
 
-    deployProd.project.addToRolePolicy(new PolicyStatement({
-      actions: [
-        'ssm:GetParameter',
-      ],
-      resources: [
-        cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/dec-honeypot/secret_key_base`),
-      ],
-    }))
+    // deployProd.project.addToRolePolicy(new PolicyStatement({
+    //   actions: [
+    //     'ssm:GetParameter',
+    //   ],
+    //   resources: [
+    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/honeypot/sg_database_connect`),
+    //   ],
+    // }))
 
     deployProd.project.addToRolePolicy(new PolicyStatement({
       actions: [
@@ -268,10 +292,10 @@ export class HoneypotPipelineStack extends Stack {
       ],
     }))
 
-    if (props.notificationReceivers) {
+    if (props.env.notificationReceivers) {
       const notifications = new PipelineNotifications(this, 'PipelineNotifications', {
         pipeline,
-        receivers: props.notificationReceivers,
+        receivers: props.env.notificationReceivers,
       })
     }
   }
