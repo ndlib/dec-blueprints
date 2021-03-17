@@ -42,9 +42,11 @@ const addPermissions = (deploy: CDKPipelineDeploy, namespace: string, foundation
     GlobalActions.ECS,
     GlobalActions.EC2,
     GlobalActions.ALB,
+    GlobalActions.EFS,
     GlobalActions.AutoScaling,
   ]))
   deploy.project.addToRolePolicy(NamespacedPolicy.ec2())
+  deploy.project.addToRolePolicy(NamespacedPolicy.efs())
   deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.logs(namespace))
@@ -113,16 +115,6 @@ export class HoneypotPipelineStack extends Stack {
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
     const testStackName = `${testNamespace}-honeycomb`
-
-    // Database Migration Test
-    const migrateTest = new RailsMigration(this, `${props.namespace}-MigrateTest`, {
-      contextEnvName: props.env.name,
-      namespace: testNamespace,
-      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
-      appSourceArtifact,
-      ssmPrefix: testStackName,
-      foundationStack: props.testFoundationStack,
-    })
 
     // CDK Deploy Test
     const testHostnamePrefix = `${props.hostnamePrefix}-test`
