@@ -1,14 +1,12 @@
-import { Fn, Stack } from '@aws-cdk/core'
-import { BuildSpec, PipelineProject, LinuxBuildImage } from '@aws-cdk/aws-codebuild'
+import { Stack } from '@aws-cdk/core'
+import { BuildSpec, PipelineProject } from '@aws-cdk/aws-codebuild'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { SlackApproval, PipelineNotifications } from '@ndlib/ndlib-cdk'
 import { CodeBuildAction, GitHubSourceAction, ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
-import { RailsMigration } from '../cdk-pipeline-migrate'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
@@ -238,15 +236,6 @@ export class HoneypotPipelineStack extends Stack {
       ],
     })
 
-    // deployTest.project.addToRolePolicy(new PolicyStatement({
-    //   actions: [
-    //     'ssm:GetParameter',
-    //   ],
-    //   resources: [
-    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/honeypot/sg_database_connect`),
-    //   ],
-    // }))
-
     deployTest.project.addToRolePolicy(new PolicyStatement({
       actions: [
         'ecr:DescribeImages',
@@ -260,15 +249,6 @@ export class HoneypotPipelineStack extends Stack {
         cdk.Fn.sub(`arn:aws:ecr:${this.region}:${this.account}:repository/aws-cdk/assets`),
       ],
     }))
-
-    // deployProd.project.addToRolePolicy(new PolicyStatement({
-    //   actions: [
-    //     'ssm:GetParameter',
-    //   ],
-    //   resources: [
-    //     cdk.Fn.sub(`arn:aws:ssm:${this.region}:${this.account}:parameter/all/honeypot/sg_database_connect`),
-    //   ],
-    // }))
 
     deployProd.project.addToRolePolicy(new PolicyStatement({
       actions: [
