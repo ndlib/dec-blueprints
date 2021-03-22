@@ -1,18 +1,19 @@
-import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, stringLike } from '@aws-cdk/assert'
+import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, Capture, encodedJson } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
 import { BuzzPipelineStack, CDPipelineStackProps } from '../src/buzz/buzz-pipeline'
-import { getContextByNamespace } from '../src/context-helpers'
 import { FoundationStack } from '../src/foundation-stack'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import helpers = require('../test/helpers')
 import { CustomEnvironment } from '../src/custom-environment'
+import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
+import helpers = require('../test/helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
   env: CustomEnvironment
   app: cdk.App
   foundationStack: FoundationStack
+  pipelineFoundationStack: PipelineFoundationStack
   subject: BuzzPipelineStack
   pipelineProps: CDPipelineStackProps
 }
@@ -39,7 +40,8 @@ describe('BuzzPipeline', () => {
     alarmsEmail: 'test.env.alarmsEmail',
   }))
   lazyEval('app', () => new cdk.App())
-  lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env }))
+  lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env, honeycombHostnamePrefix: 'honeycomb-test' }))
+  lazyEval('pipelineFoundationStack', () => new PipelineFoundationStack(lazyEval.app, 'MyPipelineFoundationStack', { env: lazyEval.env }))
   lazyEval('pipelineProps', () => ({
     env: lazyEval.env,
     appRepoOwner: 'test.pipelineProp.appRepoOwner',
@@ -48,7 +50,9 @@ describe('BuzzPipeline', () => {
     infraRepoOwner: 'test.pipelineProp.infraRepoOwner',
     infraRepoName: 'test.pipelineProp.infraRepoName',
     infraSourceBranch: 'test.pipelineProp.infraSourceBranch',
-    foundationStack: lazyEval.foundationStack,
+    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
+    testFoundationStack: lazyEval.foundationStack,
+    prodFoundationStack: lazyEval.foundationStack,
     namespace: 'test.pipelineProp.namespace',
     oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
@@ -75,7 +79,7 @@ describe('BuzzPipeline', () => {
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/buzz/sg_database_connect',
+          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
         ],
       },
     },
@@ -99,31 +103,52 @@ describe('BuzzPipeline', () => {
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/buzz/sg_database_connect',
+          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
         ],
       },
     },
     ))
   })
 
-  test('test stage runs smoke tests that make requests to the test host', () => {
+  test('test stage runs smoke tests that make requests to the test host, and over https', () => {
+    // First make sure that the action sets a TARGET_HOST variable in the env to be the correct host name
+    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', {
+      Stages: arrayWith(objectLike({
+        Name: 'Test',
+        Actions: arrayWith(objectLike({
+          Name: 'SmokeTests',
+          Configuration: objectLike({
+            EnvironmentVariables: encodedJson([{
+              name: 'TARGET_HOST',
+              type: 'PLAINTEXT',
+              value: 'test.pipelineProp.hostnamePrefix-test.test.env.domainName',
+            }]),
+          }),
+        })),
+      })),
+    }))
+
+    // Then make sure that the build command runs newman with the same TARGET_HOST as the app-host
+    const buildCommands = Capture.anyType()
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
+      ServiceRole: {
+        'Fn::GetAtt': [
+          'testpipelinePropnamespaceSmokeTestsRoleE1D617EA',
+          'Arn',
+        ],
+      },
       Source: {
-        BuildSpec: {
-          'Fn::Join': [
-            '',
-            [
-              // stringLike's wildcard doesn't seem to consume \n characters, so this is a bit more explicit of a match than I'd like
-              stringLike('{\n*"phases": {\n*"build": {\n*"commands": [\n*"newman run * --env-var app-host=test.pipelineProp.hostnamePrefix-test.'),
-              {
-                'Fn::ImportValue': 'test.env.domainStackName:DomainName',
-              },
-              stringLike('*--env-var host-protocol=https"\n*]\n*}\n*},\n*\n}'),
-            ],
-          ],
-        },
+        BuildSpec: encodedJson(objectLike({
+          phases: objectLike({
+            build: {
+              commands: buildCommands.capture(),
+            },
+          }),
+        })),
       },
     }))
+    const regex = /newman run .* --env-var app-host=\${TARGET_HOST} --env-var host-protocol=https/
+    expect(buildCommands.capturedValue[0]).toEqual(expect.stringMatching(regex))
   })
 
   test('smoke tests uses the newman image and gets dockerhub credentials from context', () => {
@@ -264,6 +289,10 @@ describe('BuzzPipeline', () => {
           objectLike({
             Name: 'Deploy',
             RunOrder: 2,
+          }),
+          objectLike({
+            Name: 'SmokeTests',
+            RunOrder: 98,
           }),
         ],
       })),

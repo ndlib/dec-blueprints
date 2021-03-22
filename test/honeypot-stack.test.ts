@@ -21,7 +21,7 @@ describe('Production stack infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,
@@ -54,7 +54,7 @@ describe('Dev stack infrastructure', () => {
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
     }
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const honeypotContext = getContextByNamespace('honeypot')
     return new HoneypotStack(app, 'MyTestStack', {
       foundationStack,

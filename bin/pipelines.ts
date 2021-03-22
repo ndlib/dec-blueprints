@@ -2,11 +2,16 @@ import { App } from '@aws-cdk/core'
 import { CustomEnvironment } from '../src/custom-environment'
 import { Stacks } from '../src/types'
 import { getContextByNamespace } from '../src/context-helpers'
+<<<<<<< HEAD
 import { FoundationStack } from '../src/foundation-stack'
 import { BeehiveStack } from '../src/beehive/beehive-stack'
 import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
 import { BuzzStack } from '../src/buzz/buzz-stack'
+=======
+>>>>>>> main
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
+import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
+import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
@@ -15,6 +20,7 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   const dockerhubCredentialsPath = app.node.tryGetContext('dockerhubCredentialsPath')
   const oauthTokenPath = app.node.tryGetContext('oauthTokenPath')
 
+  const pipelineFoundationStack = new PipelineFoundationStack(app, `${namespace}-deployment-foundation`, { env })
   const commonProps = {
     namespace,
     env: env,
@@ -23,8 +29,12 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     infraSourceBranch: infraSourceBranch,
     dockerhubCredentialsPath: dockerhubCredentialsPath,
     oauthTokenPath: oauthTokenPath,
+    pipelineFoundationStack,
+    testFoundationStack: testStacks.foundationStack,
+    prodFoundationStack: prodStacks.foundationStack,
   }
 
+<<<<<<< HEAD
   const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
     ...commonProps,
   })
@@ -39,13 +49,20 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
   })
   return { beehivePipelineStack }
 
+=======
+>>>>>>> main
   const buzzContext = getContextByNamespace('buzz')
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {
-    foundationStack,
     testStack: testStacks.BuzzStack,
     prodStack: prodStacks.BuzzStack,
     ...commonProps,
     ...buzzContext,
   })
-  return { buzzPipelineStack }
+
+  const honeycombContext = getContextByNamespace('honeycomb')
+  const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
+    ...commonProps,
+    ...honeycombContext,
+  })
+  return { buzzPipelineStack, honeycombPipelineStack }
 }

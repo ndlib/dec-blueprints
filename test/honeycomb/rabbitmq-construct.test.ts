@@ -27,7 +27,7 @@ describe('RabbitMqConstruct', () => {
     }
     const app = new cdk.App()
     const stack = new Stack(app, 'MyStack', { env })
-    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env })
+    const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const appSecurityGroup = new SecurityGroup(stack, 'appSecurityGroup', {
       vpc: foundationStack.vpc,
       allowAllOutbound: true,
