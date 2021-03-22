@@ -298,12 +298,11 @@ export class RailsConstruct extends Construct {
       maxCapacity: 3,
     })
     railsScalableTarget.scaleOnRequestCount('TrackOPSPerTarget', {
-      requestsPerTarget: Math.floor(maxOps * .9), // Scale up when we get to 90% of the max ops/min
+      requestsPerTarget: Math.floor(maxOps * 0.9), // Scale up when we get to 90% of the max ops/min
       targetGroup,
       scaleOutCooldown: Duration.minutes(5),
       scaleInCooldown: Duration.minutes(5),
     })
-
 
     // Sneakers service task
     const sneakersTaskDefinition = new FargateTaskDefinition(this, 'SneakersTaskDefinition')
