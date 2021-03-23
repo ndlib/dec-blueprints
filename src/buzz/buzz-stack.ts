@@ -45,9 +45,11 @@ export class BuzzStack extends cdk.Stack {
       logGroup: props.foundationStack.logs,
     })
 
-    const railsDockerImage = AssetHelpers.containerFromDockerfile(this, 'RailsImageAsset', {
+    const railsDockerImage = AssetHelpers.getContainerImage(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile',
+      ecrNameContextOverride: 'buzz:RailsEcrName',
+      ecrTagContextOverride: 'buzz:RailsEcrTag',
     })
     const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
 

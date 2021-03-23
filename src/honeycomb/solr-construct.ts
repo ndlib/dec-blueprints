@@ -109,9 +109,11 @@ export class SolrConstruct extends Construct {
       },
     })
 
-    const solrImage = AssetHelpers.containerFromDockerfile(this, 'ImageAsset', {
+    const solrImage = AssetHelpers.getContainerImage(this, 'SolrImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.solr',
+      ecrNameContextOverride: 'honeycomb:SolrEcrName',
+      ecrTagContextOverride: 'honeycomb:SolrEcrTag',
     })
 
     const solrContainer = solrTaskDefinition.addContainer('Solr', {

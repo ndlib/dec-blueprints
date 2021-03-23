@@ -98,7 +98,6 @@ export class FoundationStack extends cdk.Stack {
       description: 'Private Namespace for DEC',
     })
 
-    // TODO: Add CORS
     this.mediaBucket = new Bucket(this, 'mediaBucket', {
       publicReadAccess: true,
       cors: [{
