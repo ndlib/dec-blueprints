@@ -102,6 +102,7 @@ export class RailsConstruct extends Construct {
     const stackName = stack.stackName
     const domainNameImport = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     this.hostname = `${props.hostnamePrefix}.${domainNameImport}`
+    const maxOps = 200 // Max ops/min that the honeycomb rails service can handle
 
     // Define Security Groups needed for service
     const securityGroups = [
@@ -227,6 +228,8 @@ export class RailsConstruct extends Construct {
       logging,
       environment: {
         RAILS_HOST: '127.0.0.1',
+        RAILS_RATE_LIMIT: maxOps.toString(),
+        RAILS_BURST_LIMIT: '20',
       },
     })
     nginxContainer.addPortMappings({
@@ -290,6 +293,16 @@ export class RailsConstruct extends Construct {
         ttl: Duration.minutes(15),
       })
     }
+    const railsScalableTarget = appService.autoScaleTaskCount({
+      minCapacity: 1,
+      maxCapacity: 3,
+    })
+    railsScalableTarget.scaleOnRequestCount('TrackOPSPerTarget', {
+      requestsPerTarget: Math.floor(maxOps * 0.9), // Scale up when we get to 90% of the max ops/min
+      targetGroup,
+      scaleOutCooldown: Duration.minutes(5),
+      scaleInCooldown: Duration.minutes(5),
+    })
 
     // Sneakers service task
     const sneakersTaskDefinition = new FargateTaskDefinition(this, 'SneakersTaskDefinition')
