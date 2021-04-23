@@ -65,17 +65,60 @@ describe('BuzzPipeline', () => {
   test('creates codebuilds for test DB migration', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
-        Image: 'ruby:2.4.4', // this should match what is in the helper class - and only the migrate tasks use the base ruby without app code
-        RegistryCredential: {
-          Credential: 'test.pipelineProp.dockerhubCredentialsPath',
-          CredentialProvider: 'SECRETS_MANAGER',
-        },
+        Image: 'aws/codebuild/standard:2.0',
+        EnvironmentVariables: arrayWith(
+          {
+            Name: 'DOCKERHUB_USERNAME',
+            Type: 'SECRETS_MANAGER',
+            Value: 'test.pipelineProp.dockerhubCredentialsPath:username',
+          },
+          {
+            Name: 'DOCKERHUB_PASSWORD',
+            Type: 'SECRETS_MANAGER',
+            Value: 'test.pipelineProp.dockerhubCredentialsPath:password',
+          },
+          {
+            Name: 'RAILS_ENV',
+            Type: 'PLAINTEXT',
+            Value: 'production',
+          },
+          {
+            Name: 'RAILS_SECRET_KEY_BASE',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/secrets/secret_key_base',
+          },
+          {
+            Name: 'DB_HOSTNAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/database/host',
+          },
+          {
+            Name: 'DB_NAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/database/database',
+          },
+          {
+            Name: 'DB_USERNAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/database/username',
+          },
+          {
+            Name: 'DB_PASSWORD',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/database/password',
+          },
+          {
+            Name: 'DB_PORT',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-test-buzz/database/port',
+          },
+        ),
       },
       VpcConfig: {
         SecurityGroupIds: [
           {
             'Fn::GetAtt': [
-              'testpipelinePropnamespaceMigrateTestMigrateSecurityGroup762A6562',
+              'DeploymentPipelinetestpipelinePropnamespacerailsMigrateTestMigrateSecurityGroupA401D26C',
               'GroupId',
             ],
           },
@@ -89,17 +132,60 @@ describe('BuzzPipeline', () => {
   test('creates codebuilds for prod DB migration', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       Environment: {
-        Image: 'ruby:2.4.4', // this should match what is in the helper class - and only the migrate tasks use the base ruby without app code
-        RegistryCredential: {
-          Credential: 'test.pipelineProp.dockerhubCredentialsPath',
-          CredentialProvider: 'SECRETS_MANAGER',
-        },
+        Image: 'aws/codebuild/standard:2.0',
+        EnvironmentVariables: arrayWith(
+          {
+            Name: 'DOCKERHUB_USERNAME',
+            Type: 'SECRETS_MANAGER',
+            Value: 'test.pipelineProp.dockerhubCredentialsPath:username',
+          },
+          {
+            Name: 'DOCKERHUB_PASSWORD',
+            Type: 'SECRETS_MANAGER',
+            Value: 'test.pipelineProp.dockerhubCredentialsPath:password',
+          },
+          {
+            Name: 'RAILS_ENV',
+            Type: 'PLAINTEXT',
+            Value: 'production',
+          },
+          {
+            Name: 'RAILS_SECRET_KEY_BASE',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/secrets/secret_key_base',
+          },
+          {
+            Name: 'DB_HOSTNAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/host',
+          },
+          {
+            Name: 'DB_NAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/database',
+          },
+          {
+            Name: 'DB_USERNAME',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/username',
+          },
+          {
+            Name: 'DB_PASSWORD',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/password',
+          },
+          {
+            Name: 'DB_PORT',
+            Type: 'PARAMETER_STORE',
+            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/port',
+          },
+        ),
       },
       VpcConfig: {
         SecurityGroupIds: [
           {
             'Fn::GetAtt': [
-              'testpipelinePropnamespaceMigrateProdMigrateSecurityGroup34D46097',
+              'DeploymentPipelinetestpipelinePropnamespacerailsMigrateProdMigrateSecurityGroup43C35881',
               'GroupId',
             ],
           },
@@ -133,7 +219,7 @@ describe('BuzzPipeline', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       ServiceRole: {
         'Fn::GetAtt': [
-          'testpipelinePropnamespaceSmokeTestsRoleE1D617EA',
+          'DeploymentPipelinetestpipelinePropnamespaceSmokeTestsRole254DF066',
           'Arn',
         ],
       },
@@ -147,7 +233,7 @@ describe('BuzzPipeline', () => {
         })),
       },
     }))
-    const regex = /newman run .* --env-var app-host=\${TARGET_HOST} --env-var host-protocol=https/
+    const regex = /newman run .* --env-var app-host=https:\/\/\$TARGET_HOST/
     expect(buildCommands.capturedValue[0]).toEqual(expect.stringMatching(regex))
   })
 
@@ -165,8 +251,8 @@ describe('BuzzPipeline', () => {
 
   test('calls the CDKPipelineProject with the correct properties to create the test deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/cdk-pipeline-deploy')
-    const CDKPipelineDeploy = (await import('../src/cdk-pipeline-deploy')).CDKPipelineDeploy
+    jest.doMock('../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
     const BuzzPipelineStack = (await import('../src/buzz/buzz-pipeline')).BuzzPipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
@@ -181,28 +267,32 @@ describe('BuzzPipeline', () => {
       expect.any(Object),
       'test.pipelineProp.namespace-DeployTest', // Creates a CodeBuild project with an id of namespace-DeployTest
       expect.objectContaining({
-        namespace: 'test.pipelineProp.namespace-test', // Adds -test to the provided namespace
-        targetStack: 'test.pipelineProp.namespace-test-buzz', // Targets the test stack
-        contextEnvName: 'test.env.name',
-        dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
         additionalContext: {
+          appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
           'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
           'buzz:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-test', // Adds -test to the provided hostname
+          contact: 'test.pipelineProp.contact',
           createDns: 'true',
           domainStack: 'test.env.domainStackName',
           infraDirectory: '$CODEBUILD_SRC_DIR',
           networkStack: 'test.env.networkStackName',
           owner: 'test.pipelineProp.owner',
-          contact: 'test.pipelineProp.contact',
         },
+        appSource: expect.any(Object),
+        containerBuilds: expect.any(Array),
+        contextEnvName: 'test.env.name',
+        dockerCredentials: expect.any(Object),
+        infraSource: expect.any(Object),
+        namespace: 'test.pipelineProp.namespace-test', // Adds -test to the provided namespace
+        targetStack: 'test.pipelineProp.namespace-test-buzz', // Targets the test stack
       }),
     )
   })
 
   test('calls the CDKPipelineProject with the correct properties to create the prod deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/cdk-pipeline-deploy')
-    const CDKPipelineDeploy = (await import('../src/cdk-pipeline-deploy')).CDKPipelineDeploy
+    jest.doMock('../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
     const BuzzPipelineStack = (await import('../src/buzz/buzz-pipeline')).BuzzPipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
@@ -217,29 +307,36 @@ describe('BuzzPipeline', () => {
       expect.any(Object),
       'test.pipelineProp.namespace-DeployProd', // Creates a CodeBuild project with an id of namespace-DeployProd
       expect.objectContaining({
-        namespace: 'test.pipelineProp.namespace-prod', // Adds -prod to the provided namespace
-        targetStack: 'test.pipelineProp.namespace-prod-buzz', // Targets the prod stack
-        contextEnvName: 'test.env.name',
-        dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
         additionalContext: {
+          appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
           'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
           'buzz:hostnamePrefix': 'test.pipelineProp.hostnamePrefix', // Uses the provided hostname without modification
+          contact: 'test.pipelineProp.contact',
           createDns: 'true',
           domainStack: 'test.env.domainStackName',
           infraDirectory: '$CODEBUILD_SRC_DIR',
           networkStack: 'test.env.networkStackName',
           owner: 'test.pipelineProp.owner',
-          contact: 'test.pipelineProp.contact',
         },
+        appSource: expect.any(Object),
+        containerBuilds: expect.any(Array),
+        contextEnvName: 'test.env.name',
+        dockerCredentials: expect.any(Object),
+        infraSource: expect.any(Object),
+        namespace: 'test.pipelineProp.namespace-prod', // Adds -prod to the provided namespace
+        targetStack: 'test.pipelineProp.namespace-prod-buzz', // Targets the prod stack
       }),
     )
   })
 
-  test('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
+  test('creates a CodePipeline with stages in the following order: Source->Build->Test->Production', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
       Stages: [
         objectLike({
           Name: 'Source',
+        }),
+        objectLike({
+          Name: 'Build',
         }),
         objectLike({
           Name: 'Test',
@@ -257,12 +354,12 @@ describe('BuzzPipeline', () => {
         Name: 'Test',
         Actions: [
           objectLike({
-            Name: 'DBMigrate',
+            Name: 'Deploy',
             RunOrder: 1,
           }),
           objectLike({
-            Name: 'Deploy',
-            RunOrder: 2,
+            Name: 'Migrate-rails',
+            RunOrder: 1,
           }),
           objectLike({
             Name: 'SmokeTests',
@@ -283,12 +380,12 @@ describe('BuzzPipeline', () => {
         Name: 'Production',
         Actions: [
           objectLike({
-            Name: 'DBMigrate',
+            Name: 'Deploy',
             RunOrder: 1,
           }),
           objectLike({
-            Name: 'Deploy',
-            RunOrder: 2,
+            Name: 'Migrate-rails',
+            RunOrder: 1,
           }),
           objectLike({
             Name: 'SmokeTests',
