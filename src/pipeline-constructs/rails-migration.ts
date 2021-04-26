@@ -25,7 +25,7 @@ export interface IPipelineRailsMigrationProps {
   readonly dockerCredentials: ISecret
 
   /**
-   * A Foundation Stack that contains VPC information
+   * The VPC network to place codebuild network interfaces
    */
   readonly vpc: Vpc;
 
