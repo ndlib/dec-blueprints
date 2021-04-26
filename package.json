@@ -12,8 +12,8 @@
     "watch": "tsc -w",
     "test": "jest",
     "cdk": "cdk",
-    "lint": "standardx '**/*.ts'",
-    "format": "standardx --fix '**/*.ts'"
+    "lint": "standardx -v '**/*.ts'",
+    "format": "standardx -v --fix '**/*.ts'"
   },
   "devDependencies": {
     "@aws-cdk/assert": "^1.99.0",

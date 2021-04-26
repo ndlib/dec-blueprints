@@ -1,29 +1,54 @@
 import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, Capture, encodedJson } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BuzzPipelineStack, CDPipelineStackProps } from '../src/buzz/buzz-pipeline'
-import { FoundationStack } from '../src/foundation-stack'
+import { RailsPipeline, RailsPipelineContainerProps, RailsPipelineProps } from '../../src/pipeline-constructs/rails-pipeline'
+import { FoundationStack } from '../../src/foundation-stack'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import { CustomEnvironment } from '../src/custom-environment'
-import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
-import helpers = require('../test/helpers')
+import { SecretValue, Stack } from '@aws-cdk/core'
+import { ArtifactBucket } from '@ndlib/ndlib-cdk'
+import { Repository } from '@aws-cdk/aws-ecr'
+import { SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
+import { CustomEnvironment } from '../../src/custom-environment'
+import { PipelineFoundationStack } from '../../src/pipeline-foundation-stack'
+import helpers = require('../../test/helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
+  vpc: Vpc
+  databaseSecurityGroup: SecurityGroup
   env: CustomEnvironment
   app: cdk.App
   foundationStack: FoundationStack
   pipelineFoundationStack: PipelineFoundationStack
-  subject: BuzzPipelineStack
-  pipelineProps: CDPipelineStackProps
+  subject: Stack
+  stack: Stack
+  pipelineProps: RailsPipelineProps
+  railsContainer: RailsPipelineContainerProps
 }
 const lazyEval = getGiven<lazyEvals>()
 
-describe('BuzzPipeline', () => {
+describe('RailsPipeline', () => {
   process.env.CDK_CONTEXT_JSON = JSON.stringify({
     dockerhubCredentialsPath: 'test.context.dockerhubCredentialsPath',
   })
-
+  lazyEval('app', () => new cdk.App())
+  lazyEval('stack', () => new Stack(lazyEval.app, 'TestStack'))
+  lazyEval('vpc', () => Vpc.fromVpcAttributes(lazyEval.stack, 'test.vpc', {
+    vpcId: 'test.vpc.id',
+    availabilityZones: [
+      'test.vpc.availabilityZone1',
+      'test.vpc.availabilityZone2',
+    ],
+    publicSubnetIds: [
+      'test.vpc.publicSubnetId1',
+      'test.vpc.publicSubnetId2',
+    ],
+    privateSubnetIds: [
+      'test.vpc.privateSubnetId1',
+      'test.vpc.privateSubnetId2',
+    ],
+  }) as Vpc)
+  lazyEval('databaseSecurityGroup', () => SecurityGroup.fromSecurityGroupId(lazyEval.stack, 'test.pipelineProp.testStage.databaseSecurityGroup', 'test.pipelineProp.testStage.databaseSecurityGroupId') as SecurityGroup)
   lazyEval('env', () => ({
     name: 'test.env.name',
     domainName: 'test.env.domainName',
@@ -39,28 +64,66 @@ describe('BuzzPipeline', () => {
     notificationReceivers: 'test.env.notificationReceivers',
     alarmsEmail: 'test.env.alarmsEmail',
   }))
-  lazyEval('app', () => new cdk.App())
   lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env, honeycombHostnamePrefix: 'honeycomb-test' }))
   lazyEval('pipelineFoundationStack', () => new PipelineFoundationStack(lazyEval.app, 'MyPipelineFoundationStack', { env: lazyEval.env }))
+  lazyEval('railsContainer', () => ({
+    containerName: 'rails',
+    ecrNameContextOverride: 'RailsEcrName',
+    ecrTagContextOverride: 'RailsEcrTag',
+    dockerfile: 'docker/Dockerfile',
+    includeRailsMigration: true,
+  }))
   lazyEval('pipelineProps', () => ({
     env: lazyEval.env,
-    appRepoOwner: 'test.pipelineProp.appRepoOwner',
-    appRepoName: 'test.pipelineProp.appRepoName',
-    appSourceBranch: 'test.pipelineProp.appSourceBranch',
-    infraRepoOwner: 'test.pipelineProp.infraRepoOwner',
-    infraRepoName: 'test.pipelineProp.infraRepoName',
-    infraSourceBranch: 'test.pipelineProp.infraSourceBranch',
-    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
-    testFoundationStack: lazyEval.foundationStack,
-    prodFoundationStack: lazyEval.foundationStack,
+    appSource: {
+      oauthToken: SecretValue.secretsManager('test.pipelineProp.oauthTokenPath', { jsonField: 'oauth' }),
+      branch: 'test.pipelineProp.appSourceBranch',
+      owner: 'test.pipelineProp.appRepoOwner',
+      repo: 'test.pipelineProp.appRepoName',
+    },
+    infraSource: {
+      oauthToken: SecretValue.secretsManager('test.pipelineProp.oauthTokenPath', { jsonField: 'oauth' }),
+      branch: 'test.pipelineProp.infraSourceBranch',
+      owner: 'test.pipelineProp.infraRepoOwner',
+      repo: 'test.pipelineProp.infraRepoName',
+    },
     namespace: 'test.pipelineProp.namespace',
-    oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
-    hostnamePrefix: 'test.pipelineProp.hostnamePrefix',
     owner: 'test.pipelineProp.owner',
     contact: 'test.pipelineProp.contact',
+    ecr: new Repository(lazyEval.stack, 'test.pipelineProp.ecr'),
+    artifactBucket: new ArtifactBucket(lazyEval.stack, 'test.pipelineProp.artifactBucket', {}),
+    containers: [lazyEval.railsContainer],
+    smokeTestPath: 'spec/postman/spec.json',
+    testStage: {
+      vpc: lazyEval.vpc,
+      databaseSecurityGroup: lazyEval.databaseSecurityGroup,
+      configPath: 'test.pipelineProp.testStage.configPath',
+      namespace: 'test.pipelineProp.testStage.namespace',
+      stackname: 'test.pipelineProp.testStage.stackName',
+      hostname: 'test.pipelineProp.testStage.hostname',
+      // TODO onDeployCreated: spy,
+      additionalDeployContext: {
+        keyA: 'test.pipelineProp.testStage.additionalDeployContext.keyA',
+      },
+    },
+    prodStage: {
+      vpc: lazyEval.vpc,
+      databaseSecurityGroup: lazyEval.databaseSecurityGroup,
+      configPath: 'test.pipelineProp.prodStage.configPath',
+      namespace: 'test.pipelineProp.prodStage.namespace',
+      stackname: 'test.pipelineProp.prodStage.stackName',
+      hostname: 'test.pipelineProp.prodStage.hostname',
+      // TODO onDeployCreated: spy,
+      additionalDeployContext: {
+        keyA: 'test.pipelineProp.prodStage.additionalDeployContext.keyA',
+      },
+    },
   }))
-  lazyEval('subject', () => new BuzzPipelineStack(lazyEval.app, 'MyBuzzPipelineStack', lazyEval.pipelineProps))
+  lazyEval('subject', () => {
+    const pipeline = new RailsPipeline(lazyEval.stack, 'MyRailsPipelineStack', lazyEval.pipelineProps)
+    return lazyEval.stack
+  })
 
   test('creates codebuilds for test DB migration', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
@@ -85,32 +148,32 @@ describe('BuzzPipeline', () => {
           {
             Name: 'RAILS_SECRET_KEY_BASE',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/secrets/secret_key_base',
+            Value: 'test.pipelineProp.testStage.configPath/secrets/secret_key_base',
           },
           {
             Name: 'DB_HOSTNAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/database/host',
+            Value: 'test.pipelineProp.testStage.configPath/database/host',
           },
           {
             Name: 'DB_NAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/database/database',
+            Value: 'test.pipelineProp.testStage.configPath/database/database',
           },
           {
             Name: 'DB_USERNAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/database/username',
+            Value: 'test.pipelineProp.testStage.configPath/database/username',
           },
           {
             Name: 'DB_PASSWORD',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/database/password',
+            Value: 'test.pipelineProp.testStage.configPath/database/password',
           },
           {
             Name: 'DB_PORT',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-test-buzz/database/port',
+            Value: 'test.pipelineProp.testStage.configPath/database/port',
           },
         ),
       },
@@ -118,11 +181,11 @@ describe('BuzzPipeline', () => {
         SecurityGroupIds: [
           {
             'Fn::GetAtt': [
-              'DeploymentPipelinetestpipelinePropnamespacerailsMigrateTestMigrateSecurityGroupA401D26C',
+              'MyRailsPipelineStacktestpipelinePropnamespacerailsMigrateTestMigrateSecurityGroupAE027330',
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
+          'test.pipelineProp.testStage.databaseSecurityGroupId',
         ],
       },
     },
@@ -152,32 +215,32 @@ describe('BuzzPipeline', () => {
           {
             Name: 'RAILS_SECRET_KEY_BASE',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/secrets/secret_key_base',
+            Value: 'test.pipelineProp.prodStage.configPath/secrets/secret_key_base',
           },
           {
             Name: 'DB_HOSTNAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/host',
+            Value: 'test.pipelineProp.prodStage.configPath/database/host',
           },
           {
             Name: 'DB_NAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/database',
+            Value: 'test.pipelineProp.prodStage.configPath/database/database',
           },
           {
             Name: 'DB_USERNAME',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/username',
+            Value: 'test.pipelineProp.prodStage.configPath/database/username',
           },
           {
             Name: 'DB_PASSWORD',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/password',
+            Value: 'test.pipelineProp.prodStage.configPath/database/password',
           },
           {
             Name: 'DB_PORT',
             Type: 'PARAMETER_STORE',
-            Value: '/all/test.pipelineProp.namespace-prod-buzz/database/port',
+            Value: 'test.pipelineProp.prodStage.configPath/database/port',
           },
         ),
       },
@@ -185,11 +248,11 @@ describe('BuzzPipeline', () => {
         SecurityGroupIds: [
           {
             'Fn::GetAtt': [
-              'DeploymentPipelinetestpipelinePropnamespacerailsMigrateProdMigrateSecurityGroup43C35881',
+              'MyRailsPipelineStacktestpipelinePropnamespacerailsMigrateProdMigrateSecurityGroupCEA8E714',
               'GroupId',
             ],
           },
-          'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
+          'test.pipelineProp.testStage.databaseSecurityGroupId',
         ],
       },
     },
@@ -207,7 +270,7 @@ describe('BuzzPipeline', () => {
             EnvironmentVariables: encodedJson([{
               name: 'TARGET_HOST',
               type: 'PLAINTEXT',
-              value: 'test.pipelineProp.hostnamePrefix-test.test.env.domainName',
+              value: 'test.pipelineProp.testStage.hostname',
             }]),
           }),
         })),
@@ -219,7 +282,7 @@ describe('BuzzPipeline', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
       ServiceRole: {
         'Fn::GetAtt': [
-          'DeploymentPipelinetestpipelinePropnamespaceSmokeTestsRole254DF066',
+          'MyRailsPipelineStacktestpipelinePropnamespaceSmokeTestsRole184979A5',
           'Arn',
         ],
       },
@@ -251,31 +314,28 @@ describe('BuzzPipeline', () => {
 
   test('calls the CDKPipelineProject with the correct properties to create the test deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BuzzPipelineStack = (await import('../src/buzz/buzz-pipeline')).BuzzPipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const RailsPipeline = (await import('../../src/pipeline-constructs/rails-pipeline')).RailsPipeline
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 
     // Must instantiate the stack in this scope or the mock won't work
-    const subject = new BuzzPipelineStack(lazyEval.app, 'MyBuzzPipelineStack', lazyEval.pipelineProps)
+    const subject = new Stack(lazyEval.app, 'MyTestStack')
+    const pipeline = new RailsPipeline(subject, 'MyRailsPipelineStack', lazyEval.pipelineProps)
 
     // A lot of this should be separated out into different expectations/tests, but manual mocking
     // of the local module is pretty painful, so doing this all in one shot. Adding some comments
     // to call out some of the expectations
     expect(MockedCDKPipelineDeploy).toHaveBeenCalledWith(
       expect.any(Object),
-      'test.pipelineProp.namespace-DeployTest', // Creates a CodeBuild project with an id of namespace-DeployTest
+      'test.pipelineProp.namespace-DeployTest',
       expect.objectContaining({
         additionalContext: {
           appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
-          'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
-          'buzz:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-test', // Adds -test to the provided hostname
           contact: 'test.pipelineProp.contact',
-          createDns: 'true',
-          domainStack: 'test.env.domainStackName',
           infraDirectory: '$CODEBUILD_SRC_DIR',
-          networkStack: 'test.env.networkStackName',
+          keyA: 'test.pipelineProp.testStage.additionalDeployContext.keyA',
           owner: 'test.pipelineProp.owner',
         },
         appSource: expect.any(Object),
@@ -283,39 +343,36 @@ describe('BuzzPipeline', () => {
         contextEnvName: 'test.env.name',
         dockerCredentials: expect.any(Object),
         infraSource: expect.any(Object),
-        namespace: 'test.pipelineProp.namespace-test', // Adds -test to the provided namespace
-        targetStack: 'test.pipelineProp.namespace-test-buzz', // Targets the test stack
+        namespace: 'test.pipelineProp.testStage.namespace',
+        targetStack: 'test.pipelineProp.testStage.stackName',
       }),
     )
   })
 
   test('calls the CDKPipelineProject with the correct properties to create the prod deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BuzzPipelineStack = (await import('../src/buzz/buzz-pipeline')).BuzzPipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const RailsPipeline = (await import('../../src/pipeline-constructs/rails-pipeline')).RailsPipeline
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 
     // Must instantiate the stack in this scope or the mock won't work
-    const subject = new BuzzPipelineStack(lazyEval.app, 'MyBuzzPipelineStack', lazyEval.pipelineProps)
+    const subject = new Stack(lazyEval.app, 'MyTestStack')
+    const pipeline = new RailsPipeline(subject, 'MyRailsPipelineStack', lazyEval.pipelineProps)
 
     // A lot of this should be separated out into different expectations/tests, but manual mocking
     // of the local module is pretty painful, so doing this all in one shot. Adding some comments
     // to call out some of the expectations
     expect(MockedCDKPipelineDeploy).toHaveBeenCalledWith(
       expect.any(Object),
-      'test.pipelineProp.namespace-DeployProd', // Creates a CodeBuild project with an id of namespace-DeployProd
+      'test.pipelineProp.namespace-DeployProd',
       expect.objectContaining({
         additionalContext: {
           appDirectory: '$CODEBUILD_SRC_DIR_AppCode',
-          'buzz:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
-          'buzz:hostnamePrefix': 'test.pipelineProp.hostnamePrefix', // Uses the provided hostname without modification
           contact: 'test.pipelineProp.contact',
-          createDns: 'true',
-          domainStack: 'test.env.domainStackName',
           infraDirectory: '$CODEBUILD_SRC_DIR',
-          networkStack: 'test.env.networkStackName',
+          keyA: 'test.pipelineProp.prodStage.additionalDeployContext.keyA',
           owner: 'test.pipelineProp.owner',
         },
         appSource: expect.any(Object),
@@ -323,8 +380,8 @@ describe('BuzzPipeline', () => {
         contextEnvName: 'test.env.name',
         dockerCredentials: expect.any(Object),
         infraSource: expect.any(Object),
-        namespace: 'test.pipelineProp.namespace-prod', // Adds -prod to the provided namespace
-        targetStack: 'test.pipelineProp.namespace-prod-buzz', // Targets the prod stack
+        namespace: 'test.pipelineProp.prodStage.namespace',
+        targetStack: 'test.pipelineProp.prodStage.stackName',
       }),
     )
   })
