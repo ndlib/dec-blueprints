@@ -1,10 +1,13 @@
-import { BuildSpec, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
+import { BuildSpec, BuildEnvironmentVariable, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject, PipelineProjectProps } from '@aws-cdk/aws-codebuild'
 import { Artifact } from '@aws-cdk/aws-codepipeline'
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { ISecret } from '@aws-cdk/aws-secretsmanager'
 import { Construct, Fn } from '@aws-cdk/core'
+import { GitHubSource } from './github-source'
+import { ContainerBuild } from './container-build'
 
-export interface ICDKPipelineDeployProps extends PipelineProjectProps {
+export interface CdkDeployProps extends PipelineProjectProps {
   /**
    * The name of the stack that this project will deploy to. Will add
    * permissions to create change sets on these stacks.
@@ -16,17 +19,29 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    * to also create change sets on these stacks. Note: This can be ignored
    * if using the cdk deploy --exclusively option.
    */
-  readonly dependsOnStacks: string[];
+  readonly dependsOnStacks?: string[];
 
   /**
    * Infrastructure source artifact. Must include the cdk code
    */
-  readonly infraSourceArtifact: Artifact;
+  readonly infraSource: GitHubSource;
 
   /**
    * Application source artifact.
    */
-  readonly appSourceArtifact?: Artifact;
+  readonly appSource?: GitHubSource;
+
+  /**
+   * Optionally, if the pipeline has built the containers prior to the cdk deploy,
+   * adding these builds here will add context overrides to the cdk deploy command
+   * so that the stack can use the given built images instead of performing the
+   * docker build at deploy time. Note: The stack must be coded to read these
+   * overrides and use them when creating the container instead of building from
+   * file. Context overrides will be emitted as follows:
+   *   -c "containerName:ecrName=<ecr name from build>"
+   *   -c "containerName:ecrTag=<tag from build>"
+   */
+  readonly containerBuilds?: ContainerBuild[];
 
   /**
    * Subdirectory of the infrastructure source where the cdk code can be found, without leading /
@@ -45,30 +60,64 @@ export interface ICDKPipelineDeployProps extends PipelineProjectProps {
    */
   readonly additionalContext?: { [key: string]: string };
 
+  /**
+   * The context env name to use when deploying the stack
+   */
   readonly contextEnvName: string;
+
+  /**
+   * Any commands that should be run within the AppCode before deploying. A typical example
+   * of this is any npm installs or other preparation for things like a lambda.
+   */
   readonly appBuildCommands?: string[];
+
+  /**
+   * Any commands that should run after a successful deployment.
+   */
   readonly postDeployCommands?: string[];
+
+  /**
+   * If passing artifacts to a future stage, this is the base directory for those output files
+   */
   readonly outputDirectory?: string;
+
+  /**
+   * If passing artifacts to a future stage, this is the list of files to pass on
+   */
   readonly outputFiles?: string[];
+
+  /**
+   * If passing artifacts to a future stage, this is the artifact to use as the output. By default, no output will be used
+   */
   readonly outputArtifact?: Artifact;
-  readonly dockerhubCredentialsPath: string
+
+  /**
+   * The Secrets Manager secret to allow authenticated Docker logins
+   */
+   readonly dockerCredentials: ISecret
 
   /**
    * Any runtime environments needed in addition to the one needed for cdk itself (currently nodejs: '12.x')  e.g. `python: '3.8'`
    */
   readonly additionalRuntimeEnvironments?: { [key: string]: string };
+
+  /**
+   * Run order to use for this deploy action. Default is 1
+   */
+  readonly runOrder?: number
 }
 
-/**
- * Convenience class for creating a PipelineProject and Action that will use cdk to deploy
- * the service stacks in this application. Primarily handles adding the necessary
- * permissions for cdk to make changes to the target stacks involved.
- */
-export class CDKPipelineDeploy extends Construct {
+export class CdkDeploy extends Construct {
   public readonly project: PipelineProject
   public readonly action: CodeBuildAction
 
-  constructor (scope: Construct, id: string, props: ICDKPipelineDeployProps) {
+  /**
+   * Convenience class for creating a PipelineProject and Action that will use cdk to deploy
+   * the service stacks in this application. Primarily handles adding the necessary
+   * permissions for cdk to make changes to the target stacks involved and adding context
+   * overrides that are typical for our applications
+   */
+  constructor (scope: Construct, id: string, props: CdkDeployProps) {
     super(scope, id)
 
     let addtlContext = ''
@@ -77,11 +126,25 @@ export class CDKPipelineDeploy extends Construct {
         addtlContext += ` -c "${val[0]}=${val[1]}"`
       })
     }
+
+    // Container builds will have interpolated codepipeline variables in them. Pipeline
+    // variables must be passed as env in an action. This maps those values to env and
+    // adds the context overrides
+    const containerBuildsEnv = {} as { [key: string]: BuildEnvironmentVariable }
+    if (props.containerBuilds !== undefined) {
+      props.containerBuilds.forEach(build => {
+        const envKey = `${build.containerName}_ECR_TAG`.toUpperCase()
+        containerBuildsEnv[envKey] = { value: build.imageTag }
+        addtlContext += ` -c "${build.ecrNameContextOverride}=${build.ecr.repositoryName}"`
+        addtlContext += ` -c "${build.ecrTagContextOverride}=$${envKey}"`
+      })
+    }
+
     let appSourceDir = '$CODEBUILD_SRC_DIR'
     const extraInputs: Array<Artifact> = []
-    if (props.appSourceArtifact !== undefined) {
-      extraInputs.push(props.appSourceArtifact)
-      appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSourceArtifact.artifactName}`
+    if (props.appSource !== undefined) {
+      extraInputs.push(props.appSource.artifact)
+      appSourceDir = `$CODEBUILD_SRC_DIR_${props.appSource.artifact.artifactName}`
     }
     this.project = new PipelineProject(scope, `${id}Project`, {
       environment: {
@@ -89,13 +152,13 @@ export class CDKPipelineDeploy extends Construct {
         privileged: true,
       },
       environmentVariables: {
-        DOCKER_TOKEN: {
-          value: '/esu/dockerhub/token',
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        DOCKERHUB_USERNAME: {
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: `${props.dockerCredentials.secretName}:username`,
         },
-        DOCKER_USERNAME: {
-          value: '/esu/dockerhub/username',
-          type: BuildEnvironmentVariableType.PARAMETER_STORE,
+        DOCKERHUB_PASSWORD: {
+          type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+          value: `${props.dockerCredentials.secretName}:password`,
         },
       },
       buildSpec: BuildSpec.fromObject({
@@ -123,7 +186,7 @@ export class CDKPipelineDeploy extends Construct {
           build: {
             commands: [
               `cd $CODEBUILD_SRC_DIR/${props.cdkDirectory || ''}`,
-              'echo $DOCKER_TOKEN | docker login --username $DOCKER_USERNAME --password-stdin',
+              'echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin',
               `npm run cdk deploy -- ${props.targetStack} \
                 --require-approval never --exclusively \
                 -c "namespace=${props.namespace}" -c "env=${props.contextEnvName}" ${addtlContext}`,
@@ -137,13 +200,6 @@ export class CDKPipelineDeploy extends Construct {
       }),
       ...props,
     })
-
-    this.project.addToRolePolicy(new PolicyStatement({
-      actions: ['ssm:GetParameters'],
-      resources: [
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/token'),
-        Fn.sub('arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/esu/dockerhub/username')],
-    }))
 
     // CDK will try to read logs when generating output for failed events
     this.project.addToRolePolicy(new PolicyStatement({
@@ -164,7 +220,7 @@ export class CDKPipelineDeploy extends Construct {
         'cloudformation:ExecuteChangeSet',
         'cloudformation:GetTemplate',
       ],
-      resources: [props.targetStack, ...props.dependsOnStacks].map(s => Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/' + s + '/*')),
+      resources: [props.targetStack, ...props.dependsOnStacks ?? []].map(s => Fn.sub('arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/' + s + '/*')),
     }))
 
     // Add permissions to read CDK bootstrap stack/bucket
@@ -186,11 +242,15 @@ export class CDKPipelineDeploy extends Construct {
 
     this.action = new CodeBuildAction({
       actionName: 'Deploy',
-      input: props.infraSourceArtifact,
+      input: props.infraSource.artifact,
       extraInputs: extraInputs,
       project: this.project,
-      runOrder: 2,
+      runOrder: props.runOrder ?? 1,
       outputs: (props.outputArtifact ? [props.outputArtifact] : []),
+      environmentVariables: {
+        ...containerBuildsEnv,
+        ...props.environmentVariables,
+      },
     })
   }
 }

@@ -115,10 +115,12 @@ export class RailsConstruct extends Construct {
       streamPrefix: `${stackName}-ServiceTask`,
     })
 
-    const railsImage = AssetHelpers.containerFromDockerfile(stack, 'RailsImageAsset', {
+    const railsImage = AssetHelpers.getContainerImage(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.rails',
       buildArgs: { RAILS_ENV: 'production' },
+      ecrNameContextOverride: 'honeycomb:RailsEcrName',
+      ecrTagContextOverride: 'honeycomb:RailsEcrTag',
     })
 
     const railsEnvironment = {
@@ -216,9 +218,11 @@ export class RailsConstruct extends Construct {
       containerPath: '/mnt/honeycomb',
     })
     props.mediaBucket.grantPut(appTaskDefinition.taskRole)
-    const nginxImage = AssetHelpers.containerFromDockerfile(stack, 'NginxImageAsset', {
+    const nginxImage = AssetHelpers.getContainerImage(this, 'NginxImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.nginx',
+      ecrNameContextOverride: 'honeycomb:NginxEcrName',
+      ecrTagContextOverride: 'honeycomb:NginxEcrTag',
     })
 
     const nginxContainer = appTaskDefinition.addContainer('nginxContainer', {
@@ -257,14 +261,14 @@ export class RailsConstruct extends Construct {
 
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       healthCheck: {
-        path: '/',
+        path: '/health',
         protocol: elbv2.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(10),
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 10,
         port: '80',
-        healthyHttpCodes: '200,302', // 302 is acceptable for now due to redirect to okta
+        healthyHttpCodes: '200',
       },
       deregistrationDelay: Duration.seconds(60),
       targetType: elbv2.TargetType.IP,

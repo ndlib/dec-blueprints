@@ -1,33 +1,43 @@
 import { App, Stack, SecretValue } from '@aws-cdk/core'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
-import { CDKPipelineDeploy } from '../src/cdk-pipeline-deploy'
+import { CdkDeploy } from '../../src/pipeline-constructs/cdk-deploy'
 import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, stringLike, haveResource, encodedJson, anything, Capture } from '@aws-cdk/assert'
 import { Action, GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions'
+import { Secret } from '@aws-cdk/aws-secretsmanager'
 import getGiven from 'givens'
+import { GitHubSource } from '../../src/pipeline-constructs/github-source'
 
 interface lazyEvals {
   app: App
   stack: Stack
   subject: Stack
-  infraSourceArtifact: Artifact
-  appSourceArtifact: Artifact
+  infraSource: GitHubSource
+  appSource: GitHubSource
   outputDeployArtifact: Artifact
-  deploy: CDKPipelineDeploy
+  deploy: CdkDeploy
 }
 const lazyEval = getGiven<lazyEvals>()
 
 describe('CDKPipelineDeploy', () => {
-  lazyEval('infraSourceArtifact', () => new Artifact('infraSourceArtifact'))
-  lazyEval('appSourceArtifact', () => new Artifact('appSourceArtifact'))
+  lazyEval('infraSource', () => new GitHubSource(lazyEval.stack, 'InfraCode', {
+    repo: 'infraRepo',
+    owner: 'infraOwner',
+    oauthToken: SecretValue.secretsManager('oauthTokenPath', { jsonField: 'oauth' }),
+  }))
+  lazyEval('appSource', () => new GitHubSource(lazyEval.stack, 'AppCode', {
+    repo: 'appRepo',
+    owner: 'appOwner',
+    oauthToken: SecretValue.secretsManager('oauthTokenPath', { jsonField: 'oauth' }),
+  }))
   lazyEval('outputDeployArtifact', () => new Artifact('outputDeployArtifact'))
-  lazyEval('deploy', () => new CDKPipelineDeploy(lazyEval.stack, 'CDKPipelineDeploy', {
+  lazyEval('deploy', () => new CdkDeploy(lazyEval.stack, 'CDKPipelineDeploy', {
+    dockerCredentials: Secret.fromSecretNameV2(lazyEval.stack, 'dockerCredentials', 'dockerhubCredentialsPath'),
+    appSource: lazyEval.appSource,
+    infraSource: lazyEval.infraSource,
     cdkDirectory: 'cdkDirectory',
     contextEnvName: 'contextEnvName',
     targetStack: 'targetStack',
-    dockerhubCredentialsPath: 'dockerhubCredentialsPath',
     dependsOnStacks: ['dependsOnStack.A', 'dependsOnStack.B'],
-    infraSourceArtifact: lazyEval.infraSourceArtifact,
-    appSourceArtifact: lazyEval.appSourceArtifact,
     outputArtifact: lazyEval.outputDeployArtifact,
     namespace: 'namespace',
     additionalRuntimeEnvironments: {
@@ -102,7 +112,7 @@ describe('CDKPipelineDeploy', () => {
           phases: objectLike({
             pre_build: {
               commands: [
-                'cd $CODEBUILD_SRC_DIR_appSourceArtifact',
+                'cd $CODEBUILD_SRC_DIR_AppCode',
                 'appBuildCommand one',
                 'appBuildCommand two',
               ],
@@ -153,14 +163,14 @@ describe('CDKPipelineDeploy', () => {
       Environment: {
         EnvironmentVariables: [
           {
-            Name: 'DOCKER_TOKEN',
-            Type: 'PARAMETER_STORE',
-            Value: '/esu/dockerhub/token',
+            Name: 'DOCKERHUB_USERNAME',
+            Type: 'SECRETS_MANAGER',
+            Value: 'dockerhubCredentialsPath:username',
           },
           {
-            Name: 'DOCKER_USERNAME',
-            Type: 'PARAMETER_STORE',
-            Value: '/esu/dockerhub/username',
+            Name: 'DOCKERHUB_PASSWORD',
+            Type: 'SECRETS_MANAGER',
+            Value: 'dockerhubCredentialsPath:password',
           },
         ],
       },
@@ -176,7 +186,7 @@ describe('CDKPipelineDeploy', () => {
     }))
     // Unfortunately this doesn't test the order. May need to revisit
     expect(buildCommands.capturedValue).toEqual(expect.arrayContaining([
-      'echo $DOCKER_TOKEN | docker login --username $DOCKER_USERNAME --password-stdin',
+      'echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin',
       expect.stringContaining('cdk deploy'),
     ]))
   })
@@ -348,22 +358,9 @@ describe('CDKPipelineDeploy', () => {
           {
             stageName: 'SourceStage',
             actions: [
-              new GitHubSourceAction({
-                oauthToken: SecretValue.secretsManager('oauthTokenPath'),
-                actionName: 'AppCode',
-                branch: 'branch',
-                output: lazyEval.appSourceArtifact,
-                owner: 'owner',
-                repo: 'repo',
-              }),
-              new GitHubSourceAction({
-                oauthToken: SecretValue.secretsManager('oauthTokenPath'),
-                actionName: 'InfraCode',
-                branch: 'branch',
-                output: lazyEval.infraSourceArtifact,
-                owner: 'owner',
-                repo: 'repo',
-              })],
+              lazyEval.appSource.action,
+              lazyEval.infraSource.action,
+            ],
           },
           {
             stageName: 'DeployStage',
@@ -380,14 +377,14 @@ describe('CDKPipelineDeploy', () => {
           objectLike({
             Actions: [
               objectLike({
-                Configuration: {
+                Configuration: objectLike({
                   ProjectName: {
                     Ref: 'CDKPipelineDeployProject6F55B5D6',
                   },
-                  PrimarySource: 'infraSourceArtifact',
-                },
+                  PrimarySource: 'InfraCode',
+                }),
                 InputArtifacts: arrayWith({
-                  Name: 'infraSourceArtifact',
+                  Name: 'InfraCode',
                 }),
                 Name: 'Deploy',
               }),
@@ -405,7 +402,7 @@ describe('CDKPipelineDeploy', () => {
             Actions: [
               objectLike({
                 InputArtifacts: arrayWith({
-                  Name: 'appSourceArtifact',
+                  Name: 'AppCode',
                 }),
                 Name: 'Deploy',
               }),
