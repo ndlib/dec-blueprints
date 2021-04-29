@@ -105,7 +105,7 @@ export class HoneypotPipelineStack extends Stack {
       ecrNameContextOverride: 'honeypot:RailsEcrName',
       ecrTagContextOverride: 'honeypot:RailsEcrTag',
       dockerfile: 'docker/Dockerfile',
-      includeRailsMigration: true,
+      includeRailsMigration: false,
     }
 
     const oauthToken = SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' })
