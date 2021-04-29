@@ -38,9 +38,11 @@ export class HoneypotPipelineStack extends Stack {
         GlobalActions.ECS,
         GlobalActions.EC2,
         GlobalActions.ALB,
+        GlobalActions.EFS,
         GlobalActions.AutoScaling,
       ]))
       deploy.project.addToRolePolicy(NamespacedPolicy.ec2())
+      deploy.project.addToRolePolicy(NamespacedPolicy.efs())
       deploy.project.addToRolePolicy(NamespacedPolicy.ssm(stage.namespace))
       deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(stage.namespace))
       deploy.project.addToRolePolicy(NamespacedPolicy.logs(stage.namespace))
