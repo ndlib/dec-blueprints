@@ -7,7 +7,6 @@ import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
 
-
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
   const infraRepoOwner = app.node.tryGetContext('infraRepoOwner')
