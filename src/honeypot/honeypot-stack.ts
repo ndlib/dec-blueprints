@@ -1,12 +1,12 @@
 import * as cdk from '@aws-cdk/core'
 import { FargateTaskDefinition, FargatePlatformVersion } from '@aws-cdk/aws-ecs'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
-import { SharedServiceStackProps } from './shared-stack-props'
-import { FoundationStack } from './foundation-stack'
-import { CustomEnvironment } from './custom-environment'
+import { SharedServiceStackProps } from '../shared-stack-props'
+import { FoundationStack } from '../foundation-stack'
+import { CustomEnvironment } from '../custom-environment'
 import { Port, SubnetType } from '@aws-cdk/aws-ec2'
-import { AssetHelpers } from './asset-helpers'
-import { ECSSecretsHelper } from './ecs-secrets-helpers'
+import { AssetHelpers } from '../asset-helpers'
+import { ECSSecretsHelper } from '../ecs-secrets-helpers'
 import { FileSystem, LifecyclePolicy } from '@aws-cdk/aws-efs'
 import { RemovalPolicy } from '@aws-cdk/core'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
@@ -48,14 +48,15 @@ export class HoneypotStack extends cdk.Stack {
       streamPrefix: `${this.stackName}-Task`,
     })
 
-    // Add Container
-    const containerImage = AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', {
+    const railsDockerImage = AssetHelpers.getContainerImage(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile',
+      ecrNameContextOverride: 'honeypot:RailsEcrName',
+      ecrTagContextOverride: 'honeypot:RailsEcrTag',
     })
 
     const container = appTask.addContainer('railsContainer', {
-      image: containerImage,
+      image: railsDockerImage,
       command: ['bash', '/usr/bin/docker-entrypoint.sh'],
       essential: true,
       logging,

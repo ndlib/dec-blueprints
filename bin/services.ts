@@ -4,7 +4,7 @@ import { BuzzStack } from '../src/buzz/buzz-stack'
 import { CustomEnvironment } from '../src/custom-environment'
 import { FoundationStack } from '../src/foundation-stack'
 import { HoneycombStack } from '../src/honeycomb/honeycomb-stack'
-import { HoneypotStack } from '../src/honeypot-stack'
+import { HoneypotStack } from '../src/honeypot/honeypot-stack'
 import { Stacks } from '../src/types'
 import { getContextByNamespace } from '../src/context-helpers'
 
