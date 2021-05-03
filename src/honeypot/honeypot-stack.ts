@@ -48,14 +48,15 @@ export class HoneypotStack extends cdk.Stack {
       streamPrefix: `${this.stackName}-Task`,
     })
 
-    // Add Container
-    const containerImage = AssetHelpers.containerFromDockerfile(this, 'DockerImageAsset', {
+    const railsDockerImage = AssetHelpers.getContainerImage(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile',
+      ecrNameContextOverride: 'honeypot:RailsEcrName',
+      ecrTagContextOverride: 'honeypot:RailsEcrTag',
     })
 
     const container = appTask.addContainer('railsContainer', {
-      image: containerImage,
+      image: railsDockerImage,
       command: ['bash', '/usr/bin/docker-entrypoint.sh'],
       essential: true,
       logging,
