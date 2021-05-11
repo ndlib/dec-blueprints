@@ -29,6 +29,7 @@ describe('RailsConstruct', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const app = new cdk.App()
     const stack = new Stack(app, 'MyStack', { env })
@@ -115,13 +116,7 @@ describe('RailsConstruct', () => {
       NetworkConfiguration: {
         AwsvpcConfiguration: {
           SecurityGroups: [
-            'dummy-value-for-/all/MyFoundationStack/sg_database_connect',
-            {
-              'Fn::GetAtt': [
-                'MyAppSecurityGroup325F274B',
-                'GroupId',
-              ],
-            },
+            'test.env.databaseConnectSG',
           ],
         },
       },

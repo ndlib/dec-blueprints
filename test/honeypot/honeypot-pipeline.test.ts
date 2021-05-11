@@ -40,6 +40,7 @@ describe('HoneypotPipeline', () => {
     useExistingDnsZone: false,
     notificationReceivers: 'test.env.notificationReceivers',
     alarmsEmail: 'test.env.alarmsEmail',
+    databaseConnectSG: 'test.env.databaseConnectSG',
   }))
   lazyEval('app', () => new cdk.App())
   lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env, honeycombHostnamePrefix: 'honeycomb-test' }))

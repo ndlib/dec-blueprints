@@ -24,6 +24,7 @@ describe('RabbitMqConstruct', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const app = new cdk.App()
     const stack = new Stack(app, 'MyStack', { env })

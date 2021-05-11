@@ -6,6 +6,8 @@ import {
   FargateTaskDefinition,
   Secret,
   Cluster,
+  MountPoint,
+  Volume,
 } from '@aws-cdk/aws-ecs'
 import { Bucket } from '@aws-cdk/aws-s3'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
@@ -159,22 +161,44 @@ export class RailsConstruct extends Construct {
       RABBIT_LOGIN: Secret.fromSecretsManager(props.rabbitMq.secret, 'login'),
       RABBIT_PASSWORD: Secret.fromSecretsManager(props.rabbitMq.secret, 'password'),
     }
-    const railsEfsVolumeName = 'rails'
 
     // Create a task definition with more resources that can be run in an adhoc, short
     // lived manner. Also sets log level higher to get additional output
     const rakeTaskDefinition = new FargateTaskDefinition(this, 'RakeTaskDefinition', {
       memoryLimitMiB: 2048,
     })
+
     // Give nfs access and mount the efs
     props.appSecurityGroup.connections.allowFrom(props.fileSystem, Port.tcp(2049))
     props.appSecurityGroup.connections.allowTo(props.fileSystem, Port.tcp(2049))
-    rakeTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
+    const railsAccessPoint = props.fileSystem.addAccessPoint('RailsAccessPoint', {
+      path: '/rails',
+      createAcl: {
+        ownerUid: '999',
+        ownerGid: '999',
+        permissions: '755',
+      },
+      posixUser: {
+        uid: '999',
+        gid: '999',
       },
     })
+    const railsVolume: Volume = {
+      name: 'rails',
+      efsVolumeConfiguration: {
+        fileSystemId: props.fileSystem.fileSystemId,
+        authorizationConfig: {
+          accessPointId: railsAccessPoint.accessPointId,
+        },
+        transitEncryption: 'ENABLED',
+      },
+    }
+    const systemMountPoint: MountPoint = {
+      sourceVolume: railsVolume.name,
+      containerPath: '/mnt/system',
+      readOnly: false,
+    }
+    rakeTaskDefinition.addVolume(railsVolume)
     const rakeContainer = rakeTaskDefinition.addContainer('railsContainer', {
       image: railsImage,
       essential: true,
@@ -190,20 +214,11 @@ export class RailsConstruct extends Construct {
       },
       secrets: railsSecrets,
     })
-    rakeContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    rakeContainer.addMountPoints(systemMountPoint)
 
     // Rails service task
     const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
-    appTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
-      },
-    })
+    appTaskDefinition.addVolume(railsVolume)
     const railsContainer = appTaskDefinition.addContainer('railsContainer', {
       image: railsImage,
       essential: true,
@@ -212,19 +227,15 @@ export class RailsConstruct extends Construct {
       environment: railsEnvironment,
       secrets: railsSecrets,
     })
-    railsContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    railsContainer.addMountPoints(systemMountPoint)
     props.mediaBucket.grantPut(appTaskDefinition.taskRole)
+  
     const nginxImage = AssetHelpers.getContainerImage(this, 'NginxImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.nginx',
       ecrNameContextOverride: 'honeycomb:NginxEcrName',
       ecrTagContextOverride: 'honeycomb:NginxEcrTag',
     })
-
     const nginxContainer = appTaskDefinition.addContainer('nginxContainer', {
       image: nginxImage,
       essential: true,
@@ -310,12 +321,7 @@ export class RailsConstruct extends Construct {
 
     // Sneakers service task
     const sneakersTaskDefinition = new FargateTaskDefinition(this, 'SneakersTaskDefinition')
-    sneakersTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
-      },
-    })
+    sneakersTaskDefinition.addVolume(railsVolume)
     const sneakersContainer = sneakersTaskDefinition.addContainer('sneakersContainer', {
       image: railsImage,
       essential: true,
@@ -324,11 +330,7 @@ export class RailsConstruct extends Construct {
       environment: railsEnvironment,
       secrets: railsSecrets,
     })
-    sneakersContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    sneakersContainer.addMountPoints(systemMountPoint)
     const sneakersService = new FargateService(this, 'SneakersService', {
       platformVersion: FargatePlatformVersion.VERSION1_4,
       cluster: props.cluster,
