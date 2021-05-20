@@ -229,7 +229,7 @@ export class RailsConstruct extends Construct {
     })
     railsContainer.addMountPoints(systemMountPoint)
     props.mediaBucket.grantPut(appTaskDefinition.taskRole)
-  
+
     const nginxImage = AssetHelpers.getContainerImage(this, 'NginxImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.nginx',
