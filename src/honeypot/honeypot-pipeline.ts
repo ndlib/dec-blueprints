@@ -28,6 +28,9 @@ export interface CDPipelineStackProps extends cdk.StackProps {
 }
 
 export class HoneypotPipelineStack extends Stack {
+  readonly testHostnamePrefix: string
+  readonly prodHostnamePrefix: string
+
   constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
@@ -113,12 +116,12 @@ export class HoneypotPipelineStack extends Stack {
     const createDns = props.env.createDns ? 'true' : 'false'
 
     const testNamespace = `${props.namespace}-test`
-    const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
+    this.testHostnamePrefix = `${props.hostnamePrefix}-test`
+    const testHostname = `${this.testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
 
     const prodNamespace = `${props.namespace}-prod`
-    const prodHostnamePrefix = props.hostnamePrefix
-    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
+    this.prodHostnamePrefix = props.hostnamePrefix
+    const prodHostname = `${this.prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
 
     const pipeline = new RailsPipeline(this, 'DeploymentPipeline', {
       env: props.env,
@@ -154,7 +157,7 @@ export class HoneypotPipelineStack extends Stack {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeypot:hostnamePrefix': testHostnamePrefix,
+          'honeypot:hostnamePrefix': this.testHostnamePrefix,
           'honeypot:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         },
       },
@@ -170,7 +173,7 @@ export class HoneypotPipelineStack extends Stack {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeypot:hostnamePrefix': prodHostnamePrefix,
+          'honeypot:hostnamePrefix': this.prodHostnamePrefix,
           'honeypot:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         },
       },

@@ -6,6 +6,8 @@ import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 import { RailsPipelineContainerProps, RailsPipeline, RailsPipelineStageProps } from '../pipeline-constructs/rails-pipeline'
+import { HoneypotPipelineStack } from '../honeypot/honeypot-pipeline'
+import { BuzzPipelineStack } from '../buzz/buzz-pipeline'
 
 export interface CDPipelineStackProps extends StackProps {
   readonly env: CustomEnvironment;
@@ -24,6 +26,9 @@ export interface CDPipelineStackProps extends StackProps {
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
   readonly hostnamePrefix: string
+  readonly honeypotPipelineStack: HoneypotPipelineStack
+  readonly buzzPipelineStack: BuzzPipelineStack
+  // readonly beehivePipelineStack: BeehivePipelineStack
 }
 
 export class HoneycombPipelineStack extends Stack {
@@ -162,6 +167,9 @@ export class HoneycombPipelineStack extends Stack {
           createDns,
           'honeycomb:hostnamePrefix': testHostnamePrefix,
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
+          'honeypot:hostnamePrefix': props.honeypotPipelineStack.testHostnamePrefix,
+          'buzz:hostnamePrefix': props.buzzPipelineStack.testHostnamePrefix,
+          'beehive:hostnamePrefix': 'beehive-test', // TODO: Get this from the beehive pipeline once implemented
         },
       },
       prodStage: {
@@ -178,6 +186,9 @@ export class HoneycombPipelineStack extends Stack {
           createDns,
           'honeycomb:hostnamePrefix': prodHostnamePrefix,
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
+          'honeypot:hostnamePrefix': props.honeypotPipelineStack.prodHostnamePrefix,
+          'buzz:hostnamePrefix': props.buzzPipelineStack.prodHostnamePrefix,
+          'beehive:hostnamePrefix': 'beehive', // TODO: Get this from the beehive pipeline once implemented
         },
       },
     })

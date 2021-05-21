@@ -36,16 +36,19 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...buzzContext,
   })
 
-  const honeycombContext = getContextByNamespace('honeycomb')
-  const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
-    ...commonProps,
-    ...honeycombContext,
-  })
-
   const honeypotContext = getContextByNamespace('honeypot')
   const honeypotPipelineStack = new HoneypotPipelineStack(app, `${namespace}-honeypot-pipeline`, {
     ...commonProps,
     ...honeypotContext,
+  })
+
+  const honeycombContext = getContextByNamespace('honeycomb')
+  const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
+    ...commonProps,
+    ...honeycombContext,
+    honeypotPipelineStack,
+    buzzPipelineStack,
+    // beehivePipelineStack,
   })
 
   return { buzzPipelineStack, honeycombPipelineStack, honeypotPipelineStack }
