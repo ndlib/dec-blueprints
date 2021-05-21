@@ -46,6 +46,11 @@ export interface ContainerBuildProps {
    * in the top level directory of the source code for 'Dockerfile'
    */
   readonly dockerfile?: string;
+
+  /**
+   * Any build args to pass to Docker build
+   */
+  readonly buildArgs?: { [key: string]: string };
 }
 
 export class ContainerBuild extends Construct {
@@ -102,6 +107,14 @@ export class ContainerBuild extends Construct {
     this.imageTag = `${props.containerName}-${props.appSource.variables.commitId}`
 
     const dockerfile = props.dockerfile ?? 'Dockerfile'
+
+    let buildArgs = ''
+    if (props.buildArgs !== undefined) {
+      Object.entries(props.buildArgs).forEach((val) => {
+        buildArgs += ` --build-arg "${val[0]}=${val[1]}"`
+      })
+    }
+
     const buildContainerProject = new PipelineProject(this, id, {
       environment: {
         buildImage: LinuxBuildImage.STANDARD_2_0,
@@ -121,7 +134,7 @@ export class ContainerBuild extends Construct {
                 echo "$REPO_NAME:$IMAGE_TAG not found. Continuing to build."; \
                 echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin; \
                 $(aws ecr get-login --no-include-email --region $AWS_REGION); \
-                docker build -f ${dockerfile} -t $REPO_URI:$IMAGE_TAG .; \
+                docker build ${buildArgs} -f ${dockerfile} -t $REPO_URI:$IMAGE_TAG .; \
                 docker push $REPO_URI:$IMAGE_TAG; \
               fi`,
             ],

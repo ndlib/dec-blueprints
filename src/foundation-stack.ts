@@ -109,7 +109,6 @@ export class FoundationStack extends cdk.Stack {
       }],
     })
 
-    const databaseSecurityGroupParameter = StringParameter.valueFromLookup(this, `/all/${this.stackName}/sg_database_connect`)
-    this.databaseSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', databaseSecurityGroupParameter)
+    this.databaseSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', props.env.databaseConnectSG)
   }
 }

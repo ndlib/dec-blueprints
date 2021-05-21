@@ -63,6 +63,7 @@ describe('RailsPipeline', () => {
     useExistingDnsZone: false,
     notificationReceivers: 'test.env.notificationReceivers',
     alarmsEmail: 'test.env.alarmsEmail',
+    databaseConnectSG: 'test.env.databaseConnectSG',
   }))
   lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env, honeycombHostnamePrefix: 'honeycomb-test' }))
   lazyEval('pipelineFoundationStack', () => new PipelineFoundationStack(lazyEval.app, 'MyPipelineFoundationStack', { env: lazyEval.env }))

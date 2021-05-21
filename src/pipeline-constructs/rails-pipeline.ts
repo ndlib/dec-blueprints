@@ -119,6 +119,8 @@ export interface RailsPipelineContainerProps {
    * the WORKDIR defined by the Rails container. Default: ./rails_migrate.sh
    */
   readonly migrateEntryPoint?: string;
+
+  readonly buildArgs?: { [key: string]: string };
 }
 
 export interface PipelineSource {

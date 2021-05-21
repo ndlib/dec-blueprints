@@ -37,8 +37,6 @@ Some stacks require secrets that get pulled from parameter store. If secrets do 
 ```sh
 namespace="dec"
 
-aws ssm put-parameter --region us-east-1 --type 'String' --name "/all/${namespace}-foundation/sg_database_connect" --description "Database SG to attach to services that need DB connections" --value '<value>'
-
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeypot/secret_key_base" --description "Secret key base for verifying signed cookies" --value '<value>'
 
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/secrets/secret_key_base" --description "Buzz rails secret key base" --value '<value>'

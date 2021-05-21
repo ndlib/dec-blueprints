@@ -45,7 +45,7 @@ export class HoneycombStack extends Stack {
     const fileSystem = new FileSystem(this, 'FileSystem', {
       vpc: props.foundationStack.vpc,
       lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.RETAIN,
       encrypted: true,
     })
 

@@ -20,6 +20,7 @@ describe('FoundationStack', () => {
         useExistingDnsZone: true,
         notificationReceivers: 'test@test.edu',
         alarmsEmail: 'test@test.edu',
+        databaseConnectSG: 'test.env.databaseConnectSG',
       },
       honeycombHostnamePrefix: 'honeycomb-test',
     })
@@ -46,6 +47,7 @@ describe('FoundationStack', () => {
           useExistingDnsZone: true,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
+          databaseConnectSG: 'test.env.databaseConnectSG',
         },
         honeycombHostnamePrefix: 'honeycomb-test',
       })
@@ -111,6 +113,7 @@ describe('FoundationStack', () => {
           useExistingDnsZone: false,
           notificationReceivers: 'test@test.edu',
           alarmsEmail: 'test@test.edu',
+          databaseConnectSG: 'test.env.databaseConnectSG',
         },
         honeycombHostnamePrefix: 'honeycomb-test',
       })

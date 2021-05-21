@@ -62,6 +62,7 @@ export class BuzzStack extends cdk.Stack {
         PORT: '80',
         AWS_REGION: this.region,
         RAILS_LOG_TO_STDOUT: 'true',
+        RAILS_ENV: 'production',
         DEFAULT_URL_HOST: this.hostname,
         DEFAULT_URL_PROTOCOL: 'http',
         WOWZA_HOST: 'wowza.library.nd.edu',
@@ -72,7 +73,6 @@ export class BuzzStack extends cdk.Stack {
         WOWZA_CACHE_SOURCE: props.foundationStack.mediaBucket.bucketName,
       },
       secrets: {
-        RAILS_ENV: ECSSecretsHelper.fromSSM(this, 'RailsService', 'rails-env'),
         DB_PORT: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/port'),
         DB_USERNAME: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/username'),
         DB_PASSWORD: ECSSecretsHelper.fromSSM(this, 'RailsService', 'database/password'),

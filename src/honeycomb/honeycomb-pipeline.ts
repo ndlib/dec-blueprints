@@ -98,6 +98,7 @@ export class HoneycombPipelineStack extends Stack {
       ecrTagContextOverride: 'honeycomb:RailsEcrTag',
       dockerfile: 'docker/Dockerfile.rails',
       includeRailsMigration: true,
+      buildArgs: { RAILS_ENV: 'production' },
       migrationEnv: { CI: { value: 'true' } },
     }
     const nginx: RailsPipelineContainerProps = {
