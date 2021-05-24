@@ -2,14 +2,9 @@ import { App } from '@aws-cdk/core'
 import { CustomEnvironment } from '../src/custom-environment'
 import { Stacks } from '../src/types'
 import { getContextByNamespace } from '../src/context-helpers'
-<<<<<<< HEAD
-import { FoundationStack } from '../src/foundation-stack'
+import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
 import { BeehiveStack } from '../src/beehive/beehive-stack'
 import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
-import { BuzzStack } from '../src/buzz/buzz-stack'
-=======
->>>>>>> main
-import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
 import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 
@@ -34,29 +29,20 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     prodFoundationStack: prodStacks.foundationStack,
   }
 
-<<<<<<< HEAD
-  const foundationStack = new FoundationStack(app, `${namespace}-foundation`, {
-    ...commonProps,
-  })
-
-  const beehiveContext = getContextByNamespace('beehive')
-  const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
-    foundationStack,
-    testStack: testStacks.BeehiveStack,
-    prodStack: prodStacks.BeehiveStack,
-    ...commonProps,
-    ...beehiveContext,
-  })
-  return { beehivePipelineStack }
-
-=======
->>>>>>> main
   const buzzContext = getContextByNamespace('buzz')
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {
     testStack: testStacks.BuzzStack,
     prodStack: prodStacks.BuzzStack,
     ...commonProps,
     ...buzzContext,
+  })
+
+  const beehiveContext = getContextByNamespace('beehive')
+  const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
+    testStack: testStacks.BeehiveStack,
+    prodStack: prodStacks.BeehiveStack,
+    ...commonProps,
+    ...beehiveContext,
   })
 
   const honeycombContext = getContextByNamespace('honeycomb')
