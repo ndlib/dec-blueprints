@@ -98,13 +98,15 @@ export class BeehivePipelineStack extends cdk.Stack {
     // Test Host variables
     const testHostnamePrefix = `${props.hostnamePrefix}-prep`
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const testURL = `${testHostnamePrefix}-${props.env.name}.${resolvedDomain}`
+    const testURL = `${testHostnamePrefix}.${resolvedDomain}`
+    // const testURL = `${testHostnamePrefix}-${props.env.name}.${resolvedDomain}`
     // const testHost = `${testHostnamePrefix}.${resolvedDomain}`
 
     // Production Host variables
     const prodHostnamePrefix = `${props.hostnamePrefix}`
     const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const prodURL = `${prodHostnamePrefix}-${props.env.name}.${resolvedDomain}`
+    const prodURL = `${prodHostnamePrefix}.${resolvedDomain}`
+    // const prodURL = `${prodHostnamePrefix}-${props.env.name}.${resolvedDomain}`
 
     // Deploy Test actions
 
