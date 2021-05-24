@@ -24,16 +24,11 @@ export class BeehiveStack extends cdk.Stack {
   constructor (scope: cdk.Construct, id: string, props: BeehiveStackProps) {
     super(scope, id, props)
 
-<<<<<<< HEAD:src/beehive/beehive-stack.ts
     if (props.env.name === 'prod') {
       this.hostname = `${props.hostnamePrefix || this.stackName}`
     } else {
       this.hostname = `${props.hostnamePrefix || this.stackName}` + `-${props.env.name}`
     }
-=======
-    const domainNameImport = cdk.Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    this.hostname = `${props.hostnamePrefix}.${domainNameImport}`
->>>>>>> main:src/beehive-stack.ts
     const webBucket = new Bucket(this, 'beehiveBucket', {
       serverAccessLogsBucket: props.foundationStack.logBucket,
       serverAccessLogsPrefix: `s3/${this.hostname}`,
