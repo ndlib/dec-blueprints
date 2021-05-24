@@ -30,7 +30,9 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly owner: string;
   readonly contact: string;
   readonly slackNotifyStackName: string;
-  readonly foundationStack: FoundationStack;
+  readonly prodFoundationStack: FoundationStack;
+  readonly testFoundationStack: FoundationStack;
+
 }
 
 const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
@@ -134,7 +136,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     addPermissions(deployTest, testNamespace)
 
   
-    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
+    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
     const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsTest', {
@@ -213,7 +215,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
     addPermissions(deployProd, prodNamespace)
 
-    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.foundationStack.hostedZone.hostedZoneId))
+    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
     const smokeTestsProdProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsProd', {
