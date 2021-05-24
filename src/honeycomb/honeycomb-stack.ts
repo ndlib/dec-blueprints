@@ -10,7 +10,7 @@ import { RabbitMqConstruct } from './rabbitmq-construct'
 import { RailsConstruct } from './rails-construct'
 import { HoneypotStack } from '../honeypot-stack'
 import { BuzzStack } from '../buzz/buzz-stack'
-import { BeehiveStack } from '../beehive-stack'
+import { BeehiveStack } from '../beehive/beehive-stack'
 
 export interface HoneycombStackProps extends SharedServiceStackProps {
   /**
