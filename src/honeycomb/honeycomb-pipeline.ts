@@ -169,7 +169,7 @@ export class HoneycombPipelineStack extends Stack {
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
           'honeypot:hostnamePrefix': props.honeypotPipelineStack.testHostnamePrefix,
           'buzz:hostnamePrefix': props.buzzPipelineStack.testHostnamePrefix,
-          'beehive:hostnamePrefix': 'beehive-test', // TODO: Get this from the beehive pipeline once implemented
+          'beehive:hostnamePrefix': 'collections-test', // TODO: Get this from the beehive pipeline once implemented
         },
       },
       prodStage: {
@@ -188,7 +188,7 @@ export class HoneycombPipelineStack extends Stack {
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
           'honeypot:hostnamePrefix': props.honeypotPipelineStack.prodHostnamePrefix,
           'buzz:hostnamePrefix': props.buzzPipelineStack.prodHostnamePrefix,
-          'beehive:hostnamePrefix': 'beehive', // TODO: Get this from the beehive pipeline once implemented
+          'beehive:hostnamePrefix': 'collections', // TODO: Get this from the beehive pipeline once implemented
         },
       },
     })

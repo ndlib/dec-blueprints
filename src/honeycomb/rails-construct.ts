@@ -165,6 +165,7 @@ export class RailsConstruct extends Construct {
     // Create a task definition with more resources that can be run in an adhoc, short
     // lived manner. Also sets log level higher to get additional output
     const rakeTaskDefinition = new FargateTaskDefinition(this, 'RakeTaskDefinition', {
+      cpu: 1024,
       memoryLimitMiB: 2048,
     })
 
@@ -217,7 +218,10 @@ export class RailsConstruct extends Construct {
     rakeContainer.addMountPoints(systemMountPoint)
 
     // Rails service task
-    const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
+    const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition', {
+      cpu: 512,
+      memoryLimitMiB: 1024,
+    })
     appTaskDefinition.addVolume(railsVolume)
     const railsContainer = appTaskDefinition.addContainer('railsContainer', {
       image: railsImage,
