@@ -160,6 +160,8 @@ export class RailsConstruct extends Construct {
       GOOGLE_APP_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/app_id'),
       RABBIT_LOGIN: Secret.fromSecretsManager(props.rabbitMq.secret, 'login'),
       RABBIT_PASSWORD: Secret.fromSecretsManager(props.rabbitMq.secret, 'password'),
+      HAPI_TOKEN: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/hesburgh_api/token'),
+      HAPI_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/hesburgh_api/url'),
     }
 
     // Create a task definition with more resources that can be run in an adhoc, short

@@ -63,6 +63,8 @@ aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${na
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/client_secret" --description "Honeycomb Google client secret" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/developer_key" --description "Honeycomb Google developer key" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/app_id" --description "Honeycomb Google app id" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/hesburgh_api/token" --description "Hesburgh API token" --value '<value'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/hesburgh_api/url" --description "Hesburgh API URL" --value '<value>'
 ```
 
 ## How to deploy
