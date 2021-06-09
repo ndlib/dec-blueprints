@@ -7,7 +7,7 @@ import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
-import { PipelineNotifications } from '@ndlib/ndlib-cdk'
+import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -174,12 +174,12 @@ export class BeehivePipelineStack extends cdk.Stack {
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
-    // if (props.slackNotifyStackName !== undefined) {
-    //   const slackApproval = new SlackApproval(this, 'SlackApproval', {
-    //     approvalTopic,
-    //     notifyStackName: props.slackNotifyStackName,
-    //   })
-    // }
+    if (props.env.slackNotifyStackName !== undefined) {
+      const slackApproval = new SlackApproval(this, 'SlackApproval', {
+        approvalTopic,
+        notifyStackName: props.env.slackNotifyStackName,
+      })
+    }
 
     // Deploy Production Actions
 
