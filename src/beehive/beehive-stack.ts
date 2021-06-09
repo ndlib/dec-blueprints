@@ -16,10 +16,6 @@ export interface BeehiveStackProps extends SharedServiceStackProps {
 
 export class BeehiveStack extends cdk.Stack {
   public readonly hostname: string
-  public readonly testStackName: string
-  public readonly prodStackName: string
-  public readonly bucket: Bucket
-  public readonly cloudfront: CloudFrontWebDistribution
 
   constructor (scope: cdk.Construct, id: string, props: BeehiveStackProps) {
     super(scope, id, props)
