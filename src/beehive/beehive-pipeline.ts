@@ -151,7 +151,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman:5', {
           secretsManagerCredentials: dockerhubCredentials,
         }),
       },
@@ -230,7 +230,7 @@ export class BeehivePipelineStack extends cdk.Stack {
         version: '0.2',
       }),
       environment: {
-        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman', {
+        buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman:5', {
           secretsManagerCredentials: dockerhubCredentials,
         }),
       },
