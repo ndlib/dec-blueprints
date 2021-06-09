@@ -1,6 +1,5 @@
 import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
-import { ManualApprovalAction } from '@aws-cdk/aws-codepipeline-actions'
 import { Topic } from '@aws-cdk/aws-sns'
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core'
 import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
@@ -168,7 +167,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
-    const approvalAction = new ManualApprovalAction({
+    const approvalAction = new codepipelineActions.ManualApprovalAction({
       actionName: 'Approval',
       additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
       notificationTopic: approvalTopic,
