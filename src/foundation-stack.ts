@@ -98,7 +98,6 @@ export class FoundationStack extends cdk.Stack {
       description: 'Private Namespace for DEC',
     })
 
-    // TODO: Add CORS
     this.mediaBucket = new Bucket(this, 'mediaBucket', {
       publicReadAccess: true,
       cors: [{
@@ -110,7 +109,6 @@ export class FoundationStack extends cdk.Stack {
       }],
     })
 
-    const databaseSecurityGroupParameter = StringParameter.valueFromLookup(this, `/all/${this.stackName}/sg_database_connect`)
-    this.databaseSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', databaseSecurityGroupParameter)
+    this.databaseSecurityGroup = SecurityGroup.fromSecurityGroupId(this, 'PostgreSQLConnect', props.env.databaseConnectSG)
   }
 }

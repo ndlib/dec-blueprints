@@ -1,8 +1,8 @@
 import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { HoneypotStack } from '../src/honeypot-stack'
-import { FoundationStack } from '../src/foundation-stack'
-import { getContextByNamespace } from '../src/context-helpers'
+import { HoneypotStack } from '../../src/honeypot/honeypot-stack'
+import { FoundationStack } from '../../src/foundation-stack'
+import { getContextByNamespace } from '../../src/context-helpers'
 
 describe('Production stack infrastructure', () => {
   const stack = () => {
@@ -20,6 +20,7 @@ describe('Production stack infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const honeypotContext = getContextByNamespace('honeypot')
@@ -53,6 +54,7 @@ describe('Dev stack infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const honeypotContext = getContextByNamespace('honeypot')

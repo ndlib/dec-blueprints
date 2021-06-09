@@ -7,7 +7,7 @@ import { SolrConstruct } from '../../src/honeycomb/solr-construct'
 import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
 import { RailsConstruct } from '../../src/honeycomb/rails-construct'
 import { CustomEnvironment } from '../../src/custom-environment'
-import { HoneypotStack } from '../../src/honeypot-stack'
+import { HoneypotStack } from '../../src/honeypot/honeypot-stack'
 import { BuzzStack } from '../../src/buzz/buzz-stack'
 import { BeehiveStack } from '../../src/beehive-stack'
 
@@ -42,6 +42,7 @@ describe('HoneycombStack', () => {
       useExistingDnsZone: true,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     app = new cdk.App()
     foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })

@@ -6,6 +6,8 @@ import {
   FargateTaskDefinition,
   Secret,
   Cluster,
+  MountPoint,
+  Volume,
 } from '@aws-cdk/aws-ecs'
 import { Bucket } from '@aws-cdk/aws-s3'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
@@ -20,8 +22,13 @@ import { RabbitMqConstruct } from './rabbitmq-construct'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { ECSSecretsHelper } from '../ecs-secrets-helpers'
+<<<<<<< HEAD
 import { HoneypotStack } from '../honeypot-stack'
 import { BeehiveStack } from '../beehive/beehive-stack'
+=======
+import { HoneypotStack } from '../honeypot/honeypot-stack'
+import { BeehiveStack } from '../beehive-stack'
+>>>>>>> main
 import { BuzzStack } from '../buzz/buzz-stack'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 
@@ -102,6 +109,7 @@ export class RailsConstruct extends Construct {
     const stackName = stack.stackName
     const domainNameImport = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     this.hostname = `${props.hostnamePrefix}.${domainNameImport}`
+    const maxOps = 200 // Max ops/min that the honeycomb rails service can handle
 
     // Define Security Groups needed for service
     const securityGroups = [
@@ -114,10 +122,12 @@ export class RailsConstruct extends Construct {
       streamPrefix: `${stackName}-ServiceTask`,
     })
 
-    const railsImage = AssetHelpers.containerFromDockerfile(stack, 'RailsImageAsset', {
+    const railsImage = AssetHelpers.getContainerImage(this, 'RailsImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.rails',
       buildArgs: { RAILS_ENV: 'production' },
+      ecrNameContextOverride: 'honeycomb:RailsEcrName',
+      ecrTagContextOverride: 'honeycomb:RailsEcrTag',
     })
 
     const railsEnvironment = {
@@ -155,23 +165,48 @@ export class RailsConstruct extends Construct {
       GOOGLE_APP_ID: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/google/app_id'),
       RABBIT_LOGIN: Secret.fromSecretsManager(props.rabbitMq.secret, 'login'),
       RABBIT_PASSWORD: Secret.fromSecretsManager(props.rabbitMq.secret, 'password'),
+      HAPI_TOKEN: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/hesburgh_api/token'),
+      HAPI_URL: ECSSecretsHelper.fromSSM(this, 'RailsService', 'secrets/hesburgh_api/url'),
     }
-    const railsEfsVolumeName = 'rails'
 
     // Create a task definition with more resources that can be run in an adhoc, short
     // lived manner. Also sets log level higher to get additional output
     const rakeTaskDefinition = new FargateTaskDefinition(this, 'RakeTaskDefinition', {
+      cpu: 1024,
       memoryLimitMiB: 2048,
     })
+
     // Give nfs access and mount the efs
     props.appSecurityGroup.connections.allowFrom(props.fileSystem, Port.tcp(2049))
     props.appSecurityGroup.connections.allowTo(props.fileSystem, Port.tcp(2049))
-    rakeTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
+    const railsAccessPoint = props.fileSystem.addAccessPoint('RailsAccessPoint', {
+      path: '/rails',
+      createAcl: {
+        ownerUid: '999',
+        ownerGid: '999',
+        permissions: '755',
+      },
+      posixUser: {
+        uid: '999',
+        gid: '999',
       },
     })
+    const railsVolume: Volume = {
+      name: 'rails',
+      efsVolumeConfiguration: {
+        fileSystemId: props.fileSystem.fileSystemId,
+        authorizationConfig: {
+          accessPointId: railsAccessPoint.accessPointId,
+        },
+        transitEncryption: 'ENABLED',
+      },
+    }
+    const systemMountPoint: MountPoint = {
+      sourceVolume: railsVolume.name,
+      containerPath: '/mnt/system',
+      readOnly: false,
+    }
+    rakeTaskDefinition.addVolume(railsVolume)
     const rakeContainer = rakeTaskDefinition.addContainer('railsContainer', {
       image: railsImage,
       essential: true,
@@ -187,20 +222,14 @@ export class RailsConstruct extends Construct {
       },
       secrets: railsSecrets,
     })
-    rakeContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    rakeContainer.addMountPoints(systemMountPoint)
 
     // Rails service task
-    const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition')
-    appTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
-      },
+    const appTaskDefinition = new FargateTaskDefinition(this, 'RailsTaskDefinition', {
+      cpu: 512,
+      memoryLimitMiB: 1024,
     })
+    appTaskDefinition.addVolume(railsVolume)
     const railsContainer = appTaskDefinition.addContainer('railsContainer', {
       image: railsImage,
       essential: true,
@@ -209,17 +238,15 @@ export class RailsConstruct extends Construct {
       environment: railsEnvironment,
       secrets: railsSecrets,
     })
-    railsContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    railsContainer.addMountPoints(systemMountPoint)
     props.mediaBucket.grantPut(appTaskDefinition.taskRole)
-    const nginxImage = AssetHelpers.containerFromDockerfile(stack, 'NginxImageAsset', {
+
+    const nginxImage = AssetHelpers.getContainerImage(this, 'NginxImageAsset', {
       directory: props.appDirectory,
       file: 'docker/Dockerfile.nginx',
+      ecrNameContextOverride: 'honeycomb:NginxEcrName',
+      ecrTagContextOverride: 'honeycomb:NginxEcrTag',
     })
-
     const nginxContainer = appTaskDefinition.addContainer('nginxContainer', {
       image: nginxImage,
       essential: true,
@@ -227,6 +254,8 @@ export class RailsConstruct extends Construct {
       logging,
       environment: {
         RAILS_HOST: '127.0.0.1',
+        RAILS_RATE_LIMIT: maxOps.toString(),
+        RAILS_BURST_LIMIT: '20',
       },
     })
     nginxContainer.addPortMappings({
@@ -254,14 +283,14 @@ export class RailsConstruct extends Construct {
 
     const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
       healthCheck: {
-        path: '/',
+        path: '/health',
         protocol: elbv2.Protocol.HTTP,
         interval: Duration.seconds(30),
         timeout: Duration.seconds(10),
         healthyThresholdCount: 2,
         unhealthyThresholdCount: 10,
         port: '80',
-        healthyHttpCodes: '200,302', // 302 is acceptable for now due to redirect to okta
+        healthyHttpCodes: '200',
       },
       deregistrationDelay: Duration.seconds(60),
       targetType: elbv2.TargetType.IP,
@@ -290,15 +319,20 @@ export class RailsConstruct extends Construct {
         ttl: Duration.minutes(15),
       })
     }
+    const railsScalableTarget = appService.autoScaleTaskCount({
+      minCapacity: 1,
+      maxCapacity: 3,
+    })
+    railsScalableTarget.scaleOnRequestCount('TrackOPSPerTarget', {
+      requestsPerTarget: Math.floor(maxOps * 0.9), // Scale up when we get to 90% of the max ops/min
+      targetGroup,
+      scaleOutCooldown: Duration.minutes(5),
+      scaleInCooldown: Duration.minutes(5),
+    })
 
     // Sneakers service task
     const sneakersTaskDefinition = new FargateTaskDefinition(this, 'SneakersTaskDefinition')
-    sneakersTaskDefinition.addVolume({
-      name: railsEfsVolumeName,
-      efsVolumeConfiguration: {
-        fileSystemId: props.fileSystem.fileSystemId,
-      },
-    })
+    sneakersTaskDefinition.addVolume(railsVolume)
     const sneakersContainer = sneakersTaskDefinition.addContainer('sneakersContainer', {
       image: railsImage,
       essential: true,
@@ -307,11 +341,7 @@ export class RailsConstruct extends Construct {
       environment: railsEnvironment,
       secrets: railsSecrets,
     })
-    sneakersContainer.addMountPoints({
-      readOnly: false,
-      sourceVolume: railsEfsVolumeName,
-      containerPath: '/mnt/honeycomb',
-    })
+    sneakersContainer.addMountPoints(systemMountPoint)
     const sneakersService = new FargateService(this, 'SneakersService', {
       platformVersion: FargatePlatformVersion.VERSION1_4,
       cluster: props.cluster,

@@ -8,7 +8,7 @@ import { CustomEnvironment } from '../custom-environment'
 import { SolrConstruct } from './solr-construct'
 import { RabbitMqConstruct } from './rabbitmq-construct'
 import { RailsConstruct } from './rails-construct'
-import { HoneypotStack } from '../honeypot-stack'
+import { HoneypotStack } from '../honeypot/honeypot-stack'
 import { BuzzStack } from '../buzz/buzz-stack'
 import { BeehiveStack } from '../beehive/beehive-stack'
 
@@ -45,7 +45,7 @@ export class HoneycombStack extends Stack {
     const fileSystem = new FileSystem(this, 'FileSystem', {
       vpc: props.foundationStack.vpc,
       lifecyclePolicy: LifecyclePolicy.AFTER_30_DAYS,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: RemovalPolicy.RETAIN,
       encrypted: true,
     })
 

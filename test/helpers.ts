@@ -1,15 +1,10 @@
 import { SynthUtils } from '@aws-cdk/assert'
-import { PipelineProject } from '@aws-cdk/aws-codebuild'
-import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { IGrantable } from '@aws-cdk/aws-iam'
 import { HostedZone } from '@aws-cdk/aws-route53'
-import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { Construct, Stack } from '@aws-cdk/core'
-import { mocked } from 'ts-jest/utils'
-import { CDKPipelineDeploy, ICDKPipelineDeployProps } from '../src/cdk-pipeline-deploy'
+import { CdkDeploy, CdkDeployProps } from '../src/pipeline-constructs/cdk-deploy'
 
 export const mockHostedZoneFromLookup = (response?: any) => {
   jest.mock('@aws-cdk/aws-route53')
@@ -27,12 +22,12 @@ export const mockHostedZoneFromLookup = (response?: any) => {
  * such as in a mockImplementation call. We can do more to mock out the actual module later if it's
  * ever moved to ndlib-cdk.
  */
-export const mockCDKPipelineDeploy = (scope: Construct, id: string, props: ICDKPipelineDeployProps) => {
+export const mockCDKPipelineDeploy = (scope: Construct, id: string, props: CdkDeployProps) => {
   const mock = {
     project: { addToRolePolicy: jest.fn() },
     action: { actionProperties: { actionName: 'MockedCDKPipelineDeployAction' }, bind: jest.fn(() => ({ configuration: undefined })) },
   }
-  return mock as unknown as CDKPipelineDeploy
+  return mock as unknown as CdkDeploy
 }
 
 /**

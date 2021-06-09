@@ -37,8 +37,6 @@ Some stacks require secrets that get pulled from parameter store. If secrets do 
 ```sh
 namespace="dec"
 
-aws ssm put-parameter --region us-east-1 --type 'String' --name "/all/${namespace}-foundation/sg_database_connect" --description "Database SG to attach to services that need DB connections" --value '<value>'
-
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeypot/secret_key_base" --description "Secret key base for verifying signed cookies" --value '<value>'
 
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-buzz/secrets/secret_key_base" --description "Buzz rails secret key base" --value '<value>'
@@ -65,6 +63,8 @@ aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${na
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/client_secret" --description "Honeycomb Google client secret" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/developer_key" --description "Honeycomb Google developer key" --value '<value>'
 aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/google/app_id" --description "Honeycomb Google app id" --value '<value>'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/hesburgh_api/token" --description "Hesburgh API token" --value '<value'
+aws ssm put-parameter --region us-east-1 --type 'SecureString' --name "/all/${namespace}-honeycomb/secrets/hesburgh_api/url" --description "Hesburgh API URL" --value '<value>'
 ```
 
 ## How to deploy

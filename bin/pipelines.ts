@@ -7,6 +7,7 @@ import { BeehiveStack } from '../src/beehive/beehive-stack'
 import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
 import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
+import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
@@ -37,18 +38,29 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     ...buzzContext,
   })
 
+<<<<<<< HEAD
   const beehiveContext = getContextByNamespace('beehive')
   const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
     testStack: testStacks.BeehiveStack,
     prodStack: prodStacks.BeehiveStack,
     ...commonProps,
     ...beehiveContext,
+=======
+  const honeypotContext = getContextByNamespace('honeypot')
+  const honeypotPipelineStack = new HoneypotPipelineStack(app, `${namespace}-honeypot-pipeline`, {
+    ...commonProps,
+    ...honeypotContext,
+>>>>>>> main
   })
 
   const honeycombContext = getContextByNamespace('honeycomb')
   const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
     ...commonProps,
     ...honeycombContext,
+    honeypotPipelineStack,
+    buzzPipelineStack,
+    // beehivePipelineStack,
   })
-  return { buzzPipelineStack, honeycombPipelineStack }
+
+  return { buzzPipelineStack, honeycombPipelineStack, honeypotPipelineStack }
 }

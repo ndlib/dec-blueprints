@@ -59,6 +59,11 @@ export class CustomEnvironment implements Environment {
    */
   readonly alarmsEmail: string
 
+  /**
+   * The Security Group ID to use to allow connecting to the databases
+   */
+  readonly databaseConnectSG: string
+
   static fromContext = (node: ConstructNode, name: string): CustomEnvironment => {
     const contextEnv = getRequiredContext(node, 'environments')[name]
     if (contextEnv === undefined || contextEnv === null) {

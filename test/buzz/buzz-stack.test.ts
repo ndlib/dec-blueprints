@@ -1,8 +1,8 @@
 import { expect as expectCDK, haveResource, haveResourceLike, MatchStyle, matchTemplate } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BuzzStack } from '../src/buzz/buzz-stack'
-import { getContextByNamespace } from '../src/context-helpers'
-import { FoundationStack } from '../src/foundation-stack'
+import { BuzzStack } from '../../src/buzz/buzz-stack'
+import { getContextByNamespace } from '../../src/context-helpers'
+import { FoundationStack } from '../../src/foundation-stack'
 
 describe('non-production infrastructure', () => {
   const stack = () => {
@@ -22,6 +22,7 @@ describe('non-production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const hostnamePrefix = 'buzz-test'
     const buzzContext = getContextByNamespace('buzz')
@@ -97,6 +98,7 @@ describe('production infrastructure', () => {
       useExistingDnsZone: false,
       notificationReceivers: 'test@test.edu',
       alarmsEmail: 'test@test.edu',
+      databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const buzzContext = getContextByNamespace('buzz')
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })

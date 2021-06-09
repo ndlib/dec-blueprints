@@ -9,7 +9,8 @@
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": true,
       "slackNotifyStackName": "slack-cd-approvals-test-notifier",
-      "createGithubWebhooks": false
+      "createGithubWebhooks": false,
+      "databaseConnectSG": "sg-0a05476fba09d7e71"
     },
     "prod": {
       "account": "230391840102",
@@ -20,7 +21,8 @@
       "networkStackName": "unpeered-network",
       "useExistingDnsZone": false,
       "slackNotifyStackName": "slack-approval-bot-wse-approvals-notifier",
-      "createGithubWebhooks": true
+      "createGithubWebhooks": true,
+      "databaseConnectSG": "sg-048a787ae14757160"
     }
   },
   "env": "dev",
@@ -64,10 +66,14 @@
   "hosted-zone:account=333680067100:domainName=libraries.nd.edu:region=us-east-1": {
     "Id": "/hostedzone/Z3X1BGRWFJ8Z8",
     "Name": "libraries.nd.edu."
+<<<<<<< HEAD
   },
   "ssm:account=333680067100:parameterName=/all/jg-dec-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
   "ssm:account=333680067100:parameterName=/all/jg-dec-prod-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
   "ssm:account=333680067100:parameterName=/all/jg-dec-test-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
   "ssm:account=333680067100:parameterName=/all/th-dec-test-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71",
   "ssm:account=333680067100:parameterName=/all/th-dec-prod-foundation/sg_database_connect:region=us-east-1": "sg-0a05476fba09d7e71"
+=======
+  }
+>>>>>>> main
 }
