@@ -1,6 +1,6 @@
 import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BeehiveStack } from '../src/beehive-stack'
+import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
 import { FoundationStack } from '../src/foundation-stack'
 import { getContextByNamespace } from '../src/context-helpers'
 
@@ -23,10 +23,11 @@ describe('non-production infrastructure', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    return new BeehiveStack(app, 'MyTestStack', {
+    return new BeehivePipelineStack(app, 'MyTestStack', {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack-test',
+      appDirectory: './test/fixtures',
     })
   }
 
@@ -202,10 +203,12 @@ describe('production infrastructure', () => {
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const beehiveContext = getContextByNamespace('beehive')
-    return new BeehiveStack(app, 'MyTestStack', {
+    return new BeehivePipelineStack(app, 'MyTestStack', {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack',
+      appDirectory: './test/fixtures',
+      ...beehiveContext,
     })
   }
 
@@ -327,9 +330,10 @@ describe('do not create dns', () => {
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
     const beehiveContext = getContextByNamespace('beehive')
-    return new BeehiveStack(app, 'MyTestStack', {
+    return new BeehivePipelineStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      appDirectory: './test/fixtures',
       ...beehiveContext,
     })
   }

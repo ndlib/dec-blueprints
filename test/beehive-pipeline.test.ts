@@ -35,12 +35,13 @@ describe('BeehivePipeline', () => {
     region: 'test.env.region',
     account: 'test.env.account',
     createDns: true,
+    useVpcId: 'test.env.useVpcId',
     slackNotifyStackName: 'test.env.slackNotifyStackName',
     createGithubWebhooks: false,
     useExistingDnsZone: false,
     notificationReceivers: 'test.env.notificationReceivers',
     alarmsEmail: 'test.env.alarmsEmail',
-    oauthTokenPath: 'test.env.oauthTokenPath',
+    databaseConnectSG: 'test.env.databaseConnectSG',
   }))
 
   lazyEval('foundationStack', () => new FoundationStack(lazyEval.app, 'MyFoundationStack', { env: lazyEval.env }))
@@ -55,20 +56,41 @@ describe('BeehivePipeline', () => {
     infraRepoOwner: 'test.pipelineProp.infraRepoOwner',
     infraRepoName: 'test.pipelineProp.infraRepoName',
     infraSourceBranch: 'test.pipelineProp.infraSourceBranch',
-    foundationStack: lazyEval.foundationStack,
+    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
+    testFoundationStack: lazyEval.foundationStack,
+    prodFoundationStack: lazyEval.foundationStack,
     namespace: 'test.pipelineProp.namespace',
-    qaSpecPath: 'test.pipelineProp.qaSpecPath',
+    oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
+    dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
+    hostnamePrefix: 'test.pipelineProp.hostnamePrefix',
+    owner: 'test.pipelineProp.owner',
+    contact: 'test.pipelineProp.contact',
+  }))
+
+/*
+   env: lazyEval.env,
+    appRepoOwner: 'test.pipelineProp.appRepoOwner',
+    appRepoName: 'test.pipelineProp.appRepoName',
+    appSourceBranch: 'test.pipelineProp.appSourceBranch',
+    infraRepoOwner: 'test.pipelineProp.infraRepoOwner',
+    infraRepoName: 'test.pipelineProp.infraRepoName',
+    infraSourceBranch: 'test.pipelineProp.infraSourceBranch',
+    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
+    namespace: 'test.pipelineProp.namespace',
+    testFoundationStack: lazyEval.foundationStack,
+    prodFoundationStack: lazyEval.foundationStack,
+//    .qaSpecPath',
     oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
     hostnamePrefix: 'test.pipelineProp.hostnamePrefix',
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
     owner: 'test.pipelineProp.owner',
     contact: 'test.pipelineProp.contact',
-    networkStackName: 'test.pipelineProp.networkStackName',
-    domainStackName: 'test.pipelineProp.domainStackName',
-    createDns: true,
-    slackNotifyStackName: 'test.pipelineProp.slackstack',
-    notificationReceivers: 'test.pipelineProp.notificationReceivers',
-  }))
+ //   networkStackName: 'test.pipelineProp.networkStackName',
+ //   domainStackName: 'test.pipelineProp.domainStackName',
+ //   createDns: true,
+ //   slackNotifyStackName: 'test.pipelineProp.slackstack',
+ //   notificationReceivers: 'test.pipelineProp.notificationReceivers',
+ */
 
   lazyEval('subject', () => new BeehivePipelineStack(lazyEval.app, 'MyBeehivePipelineStack', lazyEval.pipelineProps))
 
@@ -91,7 +113,7 @@ describe('BeehivePipeline', () => {
   test('calls the CDKPipelineProject with the correct properties to create the test deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
     jest.doMock('../src/cdk-pipeline-deploy')
-    const CDKPipelineDeploy = (await import('../src/cdk-pipeline-deploy')).CDKPipelineDeploy
+    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
     const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
@@ -132,7 +154,7 @@ describe('BeehivePipeline', () => {
   test('calls the CDKPipelineProject with the correct properties to create the production deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
     jest.doMock('../src/cdk-pipeline-deploy')
-    const CDKPipelineDeploy = (await import('../src/cdk-pipeline-deploy')).CDKPipelineDeploy
+    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
     const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
