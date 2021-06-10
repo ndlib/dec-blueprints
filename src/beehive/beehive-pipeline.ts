@@ -2,7 +2,7 @@ import { Bucket, BucketEncryption } from '@aws-cdk/aws-s3'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import { Topic } from '@aws-cdk/aws-sns'
 import { CfnOutput, Fn, Stack } from '@aws-cdk/core'
-import { CDKPipelineDeploy } from '../cdk-pipeline-deploy'
+import { CdkDeploy } from '../pipeline-constructs/cdk-deploy'
 import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
@@ -12,6 +12,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import cdk = require('@aws-cdk/core')
+import { GitHubSource } from '../pipeline-constructs/github-source'
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -34,7 +35,7 @@ export interface CDPipelineStackProps extends cdk.StackProps {
 
 }
 
-const addPermissions = (deploy: CDKPipelineDeploy, namespace: string) => {
+const addPermissions = (deploy: CdkDeploy, namespace: string) => {
   deploy.project.addToRolePolicy(NamespacedPolicy.s3(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.ssm(namespace))
   deploy.project.addToRolePolicy(NamespacedPolicy.iamRole(namespace))
@@ -68,21 +69,15 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
 
     // Source Actions
-    const appSourceArtifact = new codepipeline.Artifact('AppCode')
-    const appSourceAction = new codepipelineActions.GitHubSourceAction({
-      actionName: 'AppCode',
+    const appSource = new GitHubSource(this, 'AppCode', {
       branch: props.appSourceBranch,
       oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-      output: appSourceArtifact,
       owner: props.appRepoOwner,
       repo: props.appRepoName,
     })
-    const infraSourceArtifact = new codepipeline.Artifact('InfraCode')
-    const infraSourceAction = new codepipelineActions.GitHubSourceAction({
-      actionName: 'InfraCode',
+    const infraSource = new GitHubSource(this, 'InfraCode', {
       branch: props.infraSourceBranch,
       oauthToken: cdk.SecretValue.secretsManager(props.oauthTokenPath, { jsonField: 'oauth' }),
-      output: infraSourceArtifact,
       owner: props.infraRepoOwner,
       repo: props.infraRepoName,
     })
@@ -106,14 +101,14 @@ export class BeehivePipelineStack extends cdk.Stack {
     const prodURL = `${prodHostnamePrefix}.${resolvedDomain}`
 
     // Deploy Test actions
-
-    const deployTest = new CDKPipelineDeploy(this, `${props.namespace}-DeployTest`, {
+    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
+    const deployTest = new CdkDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-beehive`,
-      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+      dockerCredentials,
       dependsOnStacks: [],
-      infraSourceArtifact,
-      appSourceArtifact,
+      infraSource,
+      appSource,
       appBuildCommands: [
         'npm install -g yarn',
         'yarn install',
@@ -158,18 +153,18 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
 
     const smokeTestsAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
+      input: appSource.artifact,
       project: smokeTestsProject,
       actionName: 'SmokeTests',
       runOrder: 98,
     })
-
+    
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new codepipelineActions.ManualApprovalAction({
       actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSourceAction.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSourceAction.variables.commitId}.`,
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSource.action.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSource.action.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
@@ -188,13 +183,13 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     // Deploy Prod actions
 
-    const deployProd = new CDKPipelineDeploy(this, `${props.namespace}-DeployProd`, {
+    const deployProd = new CdkDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-beehive`,
-      dockerhubCredentialsPath: props.dockerhubCredentialsPath,
+      dockerCredentials,
       dependsOnStacks: [],
-      infraSourceArtifact,
-      appSourceArtifact,
+      infraSource,
+      appSource,
       appBuildCommands: [
         'npm install -g yarn',
         'yarn install',
@@ -237,7 +232,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
 
     const smokeTestsProdAction = new codepipelineActions.CodeBuildAction({
-      input: appSourceArtifact,
+      input: appSource.artifact,
       project: smokeTestsProdProject,
       actionName: 'SmokeTests',
       runOrder: 98,
@@ -248,7 +243,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       artifactBucket,
       stages: [
         {
-          actions: [appSourceAction, infraSourceAction],
+          actions: [appSource.action, infraSource.action],
           stageName: 'Source',
         },
         {
