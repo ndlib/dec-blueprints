@@ -83,7 +83,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     })
 
     // Global variables for pipeline
-    const dockerhubCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
+    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
@@ -101,7 +101,6 @@ export class BeehivePipelineStack extends cdk.Stack {
     const prodURL = `${prodHostnamePrefix}.${resolvedDomain}`
 
     // Deploy Test actions
-    const dockerCredentials = Secret.fromSecretNameV2(this, 'dockerCredentials', props.dockerhubCredentialsPath)
     const deployTest = new CdkDeploy(this, `${props.namespace}-DeployTest`, {
       contextEnvName: props.env.name,
       targetStack: `${testNamespace}-beehive`,
@@ -147,7 +146,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman:5', {
-          secretsManagerCredentials: dockerhubCredentials,
+          secretsManagerCredentials: dockerCredentials,
         }),
       },
     })
@@ -226,7 +225,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       }),
       environment: {
         buildImage: codebuild.LinuxBuildImage.fromDockerRegistry('postman/newman:5', {
-          secretsManagerCredentials: dockerhubCredentials,
+          secretsManagerCredentials: dockerCredentials,
         }),
       },
     })
