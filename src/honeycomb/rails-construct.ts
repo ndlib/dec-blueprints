@@ -22,13 +22,8 @@ import { RabbitMqConstruct } from './rabbitmq-construct'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { ECSSecretsHelper } from '../ecs-secrets-helpers'
-<<<<<<< HEAD
-import { HoneypotStack } from '../honeypot-stack'
-import { BeehiveStack } from '../beehive/beehive-stack'
-=======
 import { HoneypotStack } from '../honeypot/honeypot-stack'
-import { BeehiveStack } from '../beehive-stack'
->>>>>>> main
+import { BeehiveStack } from '../beehive/beehive-stack'
 import { BuzzStack } from '../buzz/buzz-stack'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 
