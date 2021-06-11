@@ -1,8 +1,7 @@
 import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
+import { BeehiveStack } from '../src/beehive/beehive-stack'
 import { FoundationStack } from '../src/foundation-stack'
-import { getContextByNamespace } from '../src/context-helpers'
 
 describe('non-production infrastructure', () => {
   const stack = () => {
@@ -23,7 +22,7 @@ describe('non-production infrastructure', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    return new BeehivePipelineStack(app, 'MyTestStack', {
+    return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack-test',
@@ -202,13 +201,11 @@ describe('production infrastructure', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    const beehiveContext = getContextByNamespace('beehive')
-    return new BeehivePipelineStack(app, 'MyTestStack', {
+    return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack',
       appDirectory: './test/fixtures',
-      ...beehiveContext,
     })
   }
 
@@ -329,12 +326,11 @@ describe('do not create dns', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    const beehiveContext = getContextByNamespace('beehive')
-    return new BeehivePipelineStack(app, 'MyTestStack', {
+    return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
+      hostnamePrefix: 'MyTestStack',
       appDirectory: './test/fixtures',
-      ...beehiveContext,
     })
   }
 

@@ -66,12 +66,12 @@ describe('RailsConstruct', () => {
       env,
       hostnamePrefix: 'honeypot-test',
       appDirectory: './test/fixtures',
-
     })
     const beehive = new BeehiveStack(stack, 'MyBeehiveStack', {
       foundationStack,
       env,
       hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
     })
     const rails = new RailsConstruct(stack, 'MyRails', {
       env,

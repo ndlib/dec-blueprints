@@ -56,9 +56,8 @@ describe('HoneycombStack', () => {
     const buzzStack = new BuzzStack(app, 'MyBuzzStack', {
       foundationStack,
       env,
-      hostnamePrefix: 'honeypot-test',
+      hostnamePrefix: 'buzz-test',
       appDirectory: './test/fixtures',
-
     })
     const beehiveStack = new BeehiveStack(app, 'MyBeehiveStack', {
       foundationStack,
