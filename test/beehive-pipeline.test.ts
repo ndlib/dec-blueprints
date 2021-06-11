@@ -4,8 +4,8 @@ import { BeehivePipelineStack, CDPipelineStackProps } from '../src/beehive/beehi
 import { expect as expectCDK, objectLike, haveResourceLike, haveResource, arrayWith, stringLike } from '@aws-cdk/assert'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import helpers = require('../test/helpers')
 import { CustomEnvironment } from '../src/custom-environment'
+import helpers = require('../test/helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
@@ -106,9 +106,9 @@ describe('BeehivePipeline', () => {
         dockerCredentials: expect.any(Object),
         dependsOnStacks: [],
         appBuildCommands: [
-          "npm install -g yarn",
-          "yarn install",
-          "yarn build",
+          'npm install -g yarn',
+          'yarn install',
+          'yarn build',
         ],
         namespace: 'test.pipelineProp.namespace-test', // Adds -test to the provided namespace
         additionalContext: {
@@ -148,9 +148,9 @@ describe('BeehivePipeline', () => {
         dockerCredentials: expect.any(Object),
         dependsOnStacks: [],
         appBuildCommands: [
-          "npm install -g yarn",
-          "yarn install",
-          "yarn build",
+          'npm install -g yarn',
+          'yarn install',
+          'yarn build',
         ],
         namespace: 'test.pipelineProp.namespace-prod', // Adds -prod to the provided namespace
         additionalContext: {
@@ -159,7 +159,7 @@ describe('BeehivePipeline', () => {
           networkStack: 'test.env.networkStackName',
           domainStack: 'test.env.domainStackName',
           createDns: 'true',
-          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix', 
+          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix',
           'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
           infraDirectory: '$CODEBUILD_SRC_DIR',
         },
@@ -167,21 +167,21 @@ describe('BeehivePipeline', () => {
     )
   })
 
-test('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
-  expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
-    Stages: [
-      objectLike({
-        Name: 'Source',
-      }),
-      objectLike({
-        Name: 'Test',
-      }),
-      objectLike({
-        Name: 'Production',
-      }),
-    ],
-  })))
-})
+  test('creates a CodePipeline with stages in the following order: Source->Test->Production', () => {
+    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
+      Stages: [
+        objectLike({
+          Name: 'Source',
+        }),
+        objectLike({
+          Name: 'Test',
+        }),
+        objectLike({
+          Name: 'Production',
+        }),
+      ],
+    })))
+  })
 
   test('runs smoke test against test stack', () => {
     expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {

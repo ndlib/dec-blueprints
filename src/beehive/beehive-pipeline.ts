@@ -7,12 +7,12 @@ import { NamespacedPolicy, GlobalActions } from '../namespaced-policy'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
+import { PolicyStatement } from '@aws-cdk/aws-iam'
+import { GitHubSource } from '../pipeline-constructs/github-source'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
-import { PolicyStatement } from '@aws-cdk/aws-iam'
 import cdk = require('@aws-cdk/core')
-import { GitHubSource } from '../pipeline-constructs/github-source'
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -52,7 +52,7 @@ const addPermissions = (deploy: CdkDeploy, namespace: string) => {
       'lambda:GetLayerVersion',
     ],
     resources: [
-      '*'
+      '*',
     ],
   }))
 }
@@ -128,7 +128,6 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     addPermissions(deployTest, testNamespace)
 
-  
     deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
 
     // Smoke Tests Action
@@ -157,7 +156,7 @@ export class BeehivePipelineStack extends cdk.Stack {
       actionName: 'SmokeTests',
       runOrder: 98,
     })
-    
+
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
