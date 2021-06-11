@@ -10,7 +10,7 @@ import { RabbitMqConstruct } from '../../src/honeycomb/rabbitmq-construct'
 import * as helpers from '../helpers'
 import { HoneypotStack } from '../../src/honeypot/honeypot-stack'
 import { BuzzStack } from '../../src/buzz/buzz-stack'
-import { BeehiveStack } from '../../src/beehive-stack'
+import { BeehiveStack } from '../../src/beehive/beehive-stack'
 
 describe('RailsConstruct', () => {
   let rabbitMq: RabbitMqConstruct
@@ -66,12 +66,12 @@ describe('RailsConstruct', () => {
       env,
       hostnamePrefix: 'honeypot-test',
       appDirectory: './test/fixtures',
-
     })
     const beehive = new BeehiveStack(stack, 'MyBeehiveStack', {
       foundationStack,
       env,
       hostnamePrefix: 'honeypot-test',
+      appDirectory: './test/fixtures',
     })
     const rails = new RailsConstruct(stack, 'MyRails', {
       env,

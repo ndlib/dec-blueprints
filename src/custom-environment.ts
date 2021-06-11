@@ -32,7 +32,6 @@ export class CustomEnvironment implements Environment {
    */
 
   readonly networkStackName: string
-
   /**
    * If true, the app will find an existing zone by the domainName given.
    * If false, the app will create one.

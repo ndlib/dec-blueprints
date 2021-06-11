@@ -1,8 +1,7 @@
 import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BeehiveStack } from '../src/beehive-stack'
+import { BeehiveStack } from '../src/beehive/beehive-stack'
 import { FoundationStack } from '../src/foundation-stack'
-import { getContextByNamespace } from '../src/context-helpers'
 
 describe('non-production infrastructure', () => {
   const stack = () => {
@@ -27,6 +26,7 @@ describe('non-production infrastructure', () => {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack-test',
+      appDirectory: './test/fixtures',
     })
   }
 
@@ -201,11 +201,11 @@ describe('production infrastructure', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
       hostnamePrefix: 'MyTestStack',
+      appDirectory: './test/fixtures',
     })
   }
 
@@ -229,6 +229,25 @@ describe('production infrastructure', () => {
     }))
   })
 
+  test('creates an Origin Access Identity for CloudFront', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResource('AWS::CloudFront::CloudFrontOriginAccessIdentity', {
+      CloudFrontOriginAccessIdentityConfig: {
+        Comment: {
+          'Fn::Join': [
+            '',
+            [
+              'Static Assets in ',
+              {
+                Ref: 'beehiveBucket45D50636',
+              },
+            ],
+          ],
+        },
+      },
+    }))
+  })
+
   test('creates a CloudFront distribution with proper alias', () => {
     const newStack = stack()
     expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
@@ -246,6 +265,20 @@ describe('production infrastructure', () => {
             ],
           },
         ],
+      },
+    }))
+  })
+
+  test('CloudFront distribution gets proper ACM certificate', () => {
+    const newStack = stack()
+    expectCDK(newStack).to(haveResourceLike('AWS::CloudFront::Distribution', {
+      DistributionConfig: {
+        ViewerCertificate: {
+          AcmCertificateArn: {
+            'Fn::ImportValue': 'test-edu-domain:ACMCertificateARN',
+          },
+          SslSupportMethod: 'sni-only',
+        },
       },
     }))
   })
@@ -293,11 +326,11 @@ describe('do not create dns', () => {
       databaseConnectSG: 'test.env.databaseConnectSG',
     }
     const foundationStack = new FoundationStack(app, 'MyFoundationStack', { env, honeycombHostnamePrefix: 'honeycomb-test' })
-    const beehiveContext = getContextByNamespace('beehive')
     return new BeehiveStack(app, 'MyTestStack', {
       foundationStack,
       env,
-      ...beehiveContext,
+      hostnamePrefix: 'MyTestStack',
+      appDirectory: './test/fixtures',
     })
   }
 

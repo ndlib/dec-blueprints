@@ -36,7 +36,7 @@ export class NamespacedPolicy {
         'cloudfront:GetCloudFrontOriginAccessIdentityConfig',
         'cloudfront:UpdateCloudFrontOriginAccessIdentity',
         'cloudfront:DeleteCloudFrontOriginAccessIdentity',
-      ]
+        'cloudfront:ListTagsForResource']
     }
     if (actionOptions.includes(GlobalActions.Route53)) {
       actions.push('route53:ListHostedZones')

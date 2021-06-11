@@ -3,6 +3,8 @@ import { CustomEnvironment } from '../src/custom-environment'
 import { Stacks } from '../src/types'
 import { getContextByNamespace } from '../src/context-helpers'
 import { BuzzPipelineStack } from '../src/buzz/buzz-pipeline'
+import { BeehiveStack } from '../src/beehive/beehive-stack'
+import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
 import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
@@ -34,6 +36,14 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     prodStack: prodStacks.BuzzStack,
     ...commonProps,
     ...buzzContext,
+  })
+
+  const beehiveContext = getContextByNamespace('beehive')
+  const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
+    testStack: testStacks.BeehiveStack,
+    prodStack: prodStacks.BeehiveStack,
+    ...commonProps,
+    ...beehiveContext,
   })
 
   const honeypotContext = getContextByNamespace('honeypot')

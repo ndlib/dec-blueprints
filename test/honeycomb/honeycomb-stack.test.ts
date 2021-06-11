@@ -9,7 +9,7 @@ import { RailsConstruct } from '../../src/honeycomb/rails-construct'
 import { CustomEnvironment } from '../../src/custom-environment'
 import { HoneypotStack } from '../../src/honeypot/honeypot-stack'
 import { BuzzStack } from '../../src/buzz/buzz-stack'
-import { BeehiveStack } from '../../src/beehive-stack'
+import { BeehiveStack } from '../../src/beehive/beehive-stack'
 
 jest.mock('../../src/honeycomb/solr-construct')
 const MockedSolrConstruct = mocked(SolrConstruct)
@@ -56,14 +56,14 @@ describe('HoneycombStack', () => {
     const buzzStack = new BuzzStack(app, 'MyBuzzStack', {
       foundationStack,
       env,
-      hostnamePrefix: 'honeypot-test',
+      hostnamePrefix: 'buzz-test',
       appDirectory: './test/fixtures',
-
     })
     const beehiveStack = new BeehiveStack(app, 'MyBeehiveStack', {
       foundationStack,
       env,
-      hostnamePrefix: 'honeypot-test',
+      hostnamePrefix: 'beehive-test',
+      appDirectory: './test/fixtures',
     })
     subject = new HoneycombStack(app, 'MyTestHoneycombStack', {
       env,
