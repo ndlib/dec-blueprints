@@ -1,8 +1,8 @@
 import { App, Stack, SecretValue } from '@aws-cdk/core'
 import { Artifact, Pipeline } from '@aws-cdk/aws-codepipeline'
 import { CdkDeploy } from '../../src/pipeline-constructs/cdk-deploy'
-import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, stringLike, haveResource, encodedJson, anything, Capture } from '@aws-cdk/assert'
-import { Action, GitHubSourceAction } from '@aws-cdk/aws-codepipeline-actions'
+import { expect as expectCDK, objectLike, haveResourceLike, arrayWith, encodedJson, Capture } from '@aws-cdk/assert'
+import { BuildEnvironmentVariableType } from '@aws-cdk/aws-codebuild'
 import { Secret } from '@aws-cdk/aws-secretsmanager'
 import getGiven from 'givens'
 import { GitHubSource } from '../../src/pipeline-constructs/github-source'
@@ -55,6 +55,15 @@ describe('CDKPipelineDeploy', () => {
       'postDeployCommand one',
       'postDeployCommand two',
     ],
+    additionalEnvironmentVariables: {
+      PLAIN_ENV_VAR: {
+        value: 'plainEnvValue',
+      },
+      SECRET_ENV_VAR: {
+        type: BuildEnvironmentVariableType.SECRETS_MANAGER,
+        value: 'secretEnvPath:secretEnvKey',
+      },
+    },
   }))
   lazyEval('stack', () => new Stack(lazyEval.app, 'Stack'))
   lazyEval('subject', () => {
@@ -112,6 +121,7 @@ describe('CDKPipelineDeploy', () => {
           phases: objectLike({
             pre_build: {
               commands: [
+                'mkdir -p /var/empty',
                 'cd $CODEBUILD_SRC_DIR_AppCode',
                 'appBuildCommand one',
                 'appBuildCommand two',
@@ -189,6 +199,26 @@ describe('CDKPipelineDeploy', () => {
       'echo $DOCKERHUB_PASSWORD | docker login --username $DOCKERHUB_USERNAME --password-stdin',
       expect.stringContaining('cdk deploy'),
     ]))
+  })
+
+  test('adds any additional environment variables to the CodeBuild', () => {
+    const buildCommands = Capture.anyType()
+    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodeBuild::Project', {
+      Environment: {
+        EnvironmentVariables: arrayWith(
+          {
+            Name: 'PLAIN_ENV_VAR',
+            Type: 'PLAINTEXT',
+            Value: 'plainEnvValue',
+          },
+          {
+            Name: 'SECRET_ENV_VAR',
+            Type: 'SECRETS_MANAGER',
+            Value: 'secretEnvPath:secretEnvKey',
+          },
+        ),
+      },
+    }))
   })
 
   describe('deploy command', () => {

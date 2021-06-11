@@ -9,6 +9,7 @@ import { CustomEnvironment } from '../custom-environment'
 import { PipelineNotifications, SlackApproval } from '@ndlib/ndlib-cdk'
 import { PolicyStatement } from '@aws-cdk/aws-iam'
 import { GitHubSource } from '../pipeline-constructs/github-source'
+import { PipelineHostnames } from '../pipeline-constructs/hostnames'
 import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
@@ -25,13 +26,14 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly namespace: string;
   readonly qaSpecPath: string;
   readonly oauthTokenPath: string;
-  readonly hostnamePrefix: string;
+  readonly honeycombHostnames: PipelineHostnames;
   readonly dockerhubCredentialsPath: string;
   readonly owner: string;
   readonly contact: string;
   readonly slackNotifyStackName: string;
   readonly prodFoundationStack: FoundationStack;
   readonly testFoundationStack: FoundationStack;
+  readonly hostnames: PipelineHostnames
 
 }
 
@@ -87,18 +89,6 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     // Global variables for test space
     const testNamespace = `${props.namespace}-test`
-    const testSsmPrefix = 'dec-test-beehive'
-
-    // Test Host variables
-    const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const testURL = `${testHostnamePrefix}.${resolvedDomain}`
-    // const testHost = `${testHostnamePrefix}.${resolvedDomain}`
-
-    // Production Host variables
-    const prodHostnamePrefix = `${props.hostnamePrefix}`
-    const resolvedProdDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
-    const prodURL = `${prodHostnamePrefix}.${resolvedDomain}`
 
     // Deploy Test actions
     const deployTest = new CdkDeploy(this, `${props.namespace}-DeployTest`, {
@@ -120,15 +110,21 @@ export class BeehivePipelineStack extends cdk.Stack {
         networkStack: props.env.networkStackName,
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
-        'beehive:hostnamePrefix': testHostnamePrefix,
+        'beehive:hostnamePrefix': props.hostnames.testHostnamePrefix,
         'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
         infraDirectory: '$CODEBUILD_SRC_DIR',
+      },
+      additionalEnvironmentVariables: {
+        PUBLIC_URL: { value: `https://${props.hostnames.testHostname}` },
+        HONEYCOMB_URL: { value: `https://${props.honeycombHostnames.testHostname}` },
       },
     })
 
     addPermissions(deployTest, testNamespace)
 
-    deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+    if (props.testFoundationStack.hostedZone) {
+      deployTest.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+    }
 
     // Smoke Tests Action
     const smokeTestsProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsTest', {
@@ -137,7 +133,7 @@ export class BeehivePipelineStack extends cdk.Stack {
           build: {
             commands: [
               `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var SiteURL=${testURL}`,
+              `newman run ${props.qaSpecPath} --env-var SiteURL=${props.hostnames.testHostname}`,
             ],
           },
         },
@@ -159,10 +155,11 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     // Approval
     const appRepoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
+    const infraRepoUrl = `https://github.com/${props.infraRepoOwner}/${props.infraRepoName}`
     const approvalTopic = new Topic(this, 'ApprovalTopic')
     const approvalAction = new codepipelineActions.ManualApprovalAction({
       actionName: 'Approval',
-      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${testURL} and is awaiting your approval. If you approve these changes, they will be deployed to stack https://${prodURL}.\n\n*Commit Message*\n${appSource.action.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSource.action.variables.commitId}.`,
+      additionalInformation: `A new version of ${appRepoUrl} has been deployed to https://${props.hostnames.testHostname} and is awaiting your approval. If you approve these changes, they will be deployed to https://${props.hostnames.prodHostname}.\n\n*Application Changes:*\n${appSource.variables.commitMessage}\n\nFor more details on the changes, see ${appRepoUrl}/commit/${appSource.variables.commitId}.\n\n*Infrastructure Changes:*\n${infraSource.variables.commitMessage}\n\nFor more details on the changes, see ${infraRepoUrl}/commit/${infraSource.variables.commitId}.`,
       notificationTopic: approvalTopic,
       runOrder: 99, // This should always be the last action in the stage
     })
@@ -177,10 +174,8 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     // Global variables for production space
     const prodNamespace = `${props.namespace}-prod`
-    const prodSsmPrefix = 'dec-prod-beehive'
 
     // Deploy Prod actions
-
     const deployProd = new CdkDeploy(this, `${props.namespace}-DeployProd`, {
       contextEnvName: props.env.name,
       targetStack: `${prodNamespace}-beehive`,
@@ -200,14 +195,20 @@ export class BeehivePipelineStack extends cdk.Stack {
         networkStack: props.env.networkStackName,
         domainStack: props.env.domainStackName,
         createDns: props.env.createDns ? 'true' : 'false',
-        'beehive:hostnamePrefix': prodHostnamePrefix,
+        'beehive:hostnamePrefix': props.hostnames.prodHostnamePrefix,
         'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
         infraDirectory: '$CODEBUILD_SRC_DIR',
+      },
+      additionalEnvironmentVariables: {
+        PUBLIC_URL: { value: `https://${props.hostnames.prodHostname}` },
+        HONEYCOMB_URL: { value: `https://${props.honeycombHostnames.prodHostname}` },
       },
     })
     addPermissions(deployProd, prodNamespace)
 
-    deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+    if (props.prodFoundationStack.hostedZone) {
+      deployProd.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+    }
 
     // Smoke Tests Action
     const smokeTestsProdProject = new codebuild.PipelineProject(this, 'StaticHostSmokeTestsProd', {
@@ -216,7 +217,7 @@ export class BeehivePipelineStack extends cdk.Stack {
           build: {
             commands: [
               `chmod -R 755 ${props.qaSpecPath}`,
-              `newman run ${props.qaSpecPath} --env-var SiteURL=${prodURL}`,
+              `newman run ${props.qaSpecPath} --env-var SiteURL=${props.hostnames.prodHostname}`,
             ],
           },
         },

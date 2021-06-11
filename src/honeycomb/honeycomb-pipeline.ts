@@ -6,8 +6,7 @@ import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 import { RailsPipelineContainerProps, RailsPipeline, RailsPipelineStageProps } from '../pipeline-constructs/rails-pipeline'
-import { HoneypotPipelineStack } from '../honeypot/honeypot-pipeline'
-import { BuzzPipelineStack } from '../buzz/buzz-pipeline'
+import { PipelineHostnames } from '../pipeline-constructs/hostnames'
 
 export interface CDPipelineStackProps extends StackProps {
   readonly env: CustomEnvironment;
@@ -25,10 +24,10 @@ export interface CDPipelineStackProps extends StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
-  readonly hostnamePrefix: string
-  readonly honeypotPipelineStack: HoneypotPipelineStack
-  readonly buzzPipelineStack: BuzzPipelineStack
-  // readonly beehivePipelineStack: BeehivePipelineStack
+  readonly hostnames: PipelineHostnames
+  readonly honeypotHostnames: PipelineHostnames
+  readonly buzzHostnames: PipelineHostnames
+  readonly beehiveHostnames: PipelineHostnames
 }
 
 export class HoneycombPipelineStack extends Stack {
@@ -76,11 +75,16 @@ export class HoneycombPipelineStack extends Stack {
         resources: [Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
         actions: ['iam:PassRole'],
       }))
-      if (stage.stageName === 'Test') {
-        deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+
+      if (props.testFoundationStack.hostedZone) {
+        if (stage.stageName === 'Test') {
+          deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+        }
       }
-      if (stage.stageName === 'Production') {
-        deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+      if (props.prodFoundationStack.hostedZone) {
+        if (stage.stageName === 'Production') {
+          deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+        }
       }
       // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
       // Have to just use a constant prefix regardless of whether its test or prod stack name.
@@ -124,12 +128,7 @@ export class HoneycombPipelineStack extends Stack {
     const createDns = props.env.createDns ? 'true' : 'false'
 
     const testNamespace = `${props.namespace}-test`
-    const testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const testHostname = `${testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
-
     const prodNamespace = `${props.namespace}-prod`
-    const prodHostnamePrefix = props.hostnamePrefix
-    const prodHostname = `${prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
 
     const pipeline = new RailsPipeline(this, 'DeploymentPipeline', {
       env: props.env,
@@ -159,17 +158,17 @@ export class HoneycombPipelineStack extends Stack {
         configPath: `/all/${testNamespace}-honeycomb`,
         namespace: testNamespace,
         stackname: `${testNamespace}-honeycomb`,
-        hostname: testHostname,
+        hostname: props.hostnames.testHostname,
         onDeployCreated: addPermissions,
         additionalDeployContext: {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeycomb:hostnamePrefix': testHostnamePrefix,
+          'honeycomb:hostnamePrefix': props.hostnames.testHostnamePrefix,
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
-          'honeypot:hostnamePrefix': props.honeypotPipelineStack.testHostnamePrefix,
-          'buzz:hostnamePrefix': props.buzzPipelineStack.testHostnamePrefix,
-          'beehive:hostnamePrefix': 'collections-test', // TODO: Get this from the beehive pipeline once implemented
+          'honeypot:hostnamePrefix': props.honeypotHostnames.testHostnamePrefix,
+          'buzz:hostnamePrefix': props.buzzHostnames.testHostnamePrefix,
+          'beehive:hostnamePrefix': props.beehiveHostnames.testHostnamePrefix,
         },
       },
       prodStage: {
@@ -178,17 +177,17 @@ export class HoneycombPipelineStack extends Stack {
         configPath: `/all/${prodNamespace}-honeycomb`,
         namespace: prodNamespace,
         stackname: `${prodNamespace}-honeycomb`,
-        hostname: prodHostname,
+        hostname: props.hostnames.prodHostname,
         onDeployCreated: addPermissions,
         additionalDeployContext: {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeycomb:hostnamePrefix': prodHostnamePrefix,
+          'honeycomb:hostnamePrefix': props.hostnames.prodHostnamePrefix,
           'honeycomb:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
-          'honeypot:hostnamePrefix': props.honeypotPipelineStack.prodHostnamePrefix,
-          'buzz:hostnamePrefix': props.buzzPipelineStack.prodHostnamePrefix,
-          'beehive:hostnamePrefix': 'collections', // TODO: Get this from the beehive pipeline once implemented
+          'honeypot:hostnamePrefix': props.honeypotHostnames.prodHostnamePrefix,
+          'buzz:hostnamePrefix': props.buzzHostnames.prodHostnamePrefix,
+          'beehive:hostnamePrefix': props.beehiveHostnames.prodHostnamePrefix,
         },
       },
     })

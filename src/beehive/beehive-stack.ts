@@ -6,6 +6,7 @@ import { SharedServiceStackProps } from '../shared-stack-props'
 import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { BucketDeployment, Source } from '@aws-cdk/aws-s3-deployment'
+import { AssetHelpers } from '../asset-helpers'
 
 export interface BeehiveStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string;
@@ -66,7 +67,7 @@ export class BeehiveStack extends cdk.Stack {
       ],
     })
     // Create DNS record (conditionally)
-    if (props.env.createDns) {
+    if (props.env.createDns && props.foundationStack.hostedZone) {
       new CnameRecord(this, 'BeehiveCNAME', { // eslint-disable-line no-new
         recordName: props.hostnamePrefix, // this.hostname,
         comment: this.hostname,
@@ -82,7 +83,7 @@ export class BeehiveStack extends cdk.Stack {
     })
 
     const deployBucket = new BucketDeployment(this, 'DeployWebsite', {
-      sources: [Source.asset(props.appDirectory)],
+      sources: [AssetHelpers.s3SourceFromAsset(this, props.appDirectory)],
       destinationBucket: webBucket,
       distribution: distribution,
     })

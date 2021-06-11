@@ -8,6 +8,7 @@ import { BeehivePipelineStack } from '../src/beehive/beehive-pipeline'
 import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
 import { HoneycombPipelineStack } from '../src/honeycomb/honeycomb-pipeline'
 import { HoneypotPipelineStack } from '../src/honeypot/honeypot-pipeline'
+import { PipelineHostnames } from '../src/pipeline-constructs/hostnames'
 
 export const instantiateStacks = (app: App, namespace: string, env: CustomEnvironment, testStacks: Stacks, prodStacks: Stacks): Stacks => {
   const infraRepoName = app.node.tryGetContext('infraRepoName')
@@ -30,35 +31,41 @@ export const instantiateStacks = (app: App, namespace: string, env: CustomEnviro
     prodFoundationStack: prodStacks.foundationStack,
   }
 
+  const honeycombContext = getContextByNamespace('honeycomb')
+  const honeycombHostnames = new PipelineHostnames(honeycombContext.hostnamePrefix, env)
   const buzzContext = getContextByNamespace('buzz')
+  const buzzHostnames = new PipelineHostnames(buzzContext.hostnamePrefix, env)
+  const beehiveContext = getContextByNamespace('beehive')
+  const beehiveHostnames = new PipelineHostnames(beehiveContext.hostnamePrefix, env)
+  const honeypotContext = getContextByNamespace('honeypot')
+  const honeypotHostnames = new PipelineHostnames(honeypotContext.hostnamePrefix, env)
+
   const buzzPipelineStack = new BuzzPipelineStack(app, `${namespace}-buzz-pipeline`, {
-    testStack: testStacks.BuzzStack,
-    prodStack: prodStacks.BuzzStack,
+    hostnames: buzzHostnames,
     ...commonProps,
     ...buzzContext,
   })
 
-  const beehiveContext = getContextByNamespace('beehive')
   const beehivePipelineStack = new BeehivePipelineStack(app, `${namespace}-beehive-pipeline`, {
-    testStack: testStacks.BeehiveStack,
-    prodStack: prodStacks.BeehiveStack,
+    hostnames: beehiveHostnames,
+    honeycombHostnames,
     ...commonProps,
     ...beehiveContext,
   })
 
-  const honeypotContext = getContextByNamespace('honeypot')
   const honeypotPipelineStack = new HoneypotPipelineStack(app, `${namespace}-honeypot-pipeline`, {
+    hostnames: honeypotHostnames,
     ...commonProps,
     ...honeypotContext,
   })
 
-  const honeycombContext = getContextByNamespace('honeycomb')
   const honeycombPipelineStack = new HoneycombPipelineStack(app, `${namespace}-honeycomb-pipeline`, {
+    hostnames: honeycombHostnames,
+    buzzHostnames,
+    beehiveHostnames,
+    honeypotHostnames,
     ...commonProps,
     ...honeycombContext,
-    honeypotPipelineStack,
-    buzzPipelineStack,
-    // beehivePipelineStack,
   })
 
   return { buzzPipelineStack, honeycombPipelineStack, honeypotPipelineStack }

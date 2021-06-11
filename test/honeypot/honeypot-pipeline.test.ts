@@ -13,6 +13,7 @@ import { FoundationStack } from '../../src/foundation-stack'
 import getGiven from 'givens'
 import { CustomEnvironment } from '../../src/custom-environment'
 import { PipelineFoundationStack } from '../../src/pipeline-foundation-stack'
+import { PipelineHostnames } from '../../src/pipeline-constructs/hostnames'
 
 // A set of variables that won't get set until used
 interface lazyEvals {
@@ -59,7 +60,7 @@ describe('HoneypotPipeline', () => {
     namespace: 'test.pipelineProp.namespace',
     oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
-    hostnamePrefix: 'test.pipelineProp.hostnamePrefix',
+    hostnames: new PipelineHostnames('test.pipelineProp.hostnamePrefix', lazyEval.env),
     owner: 'test.pipelineProp.owner',
     contact: 'test.pipelineProp.contact',
   }))
