@@ -90,7 +90,7 @@ export class BeehivePipelineStack extends cdk.Stack {
     const testSsmPrefix = 'dec-test-beehive'
 
     // Test Host variables
-    const testHostnamePrefix = `${props.hostnamePrefix}-prep`
+    const testHostnamePrefix = `${props.hostnamePrefix}-test`
     const resolvedDomain = Fn.importValue(`${props.env.domainStackName}:DomainName`)
     const testURL = `${testHostnamePrefix}.${resolvedDomain}`
     // const testHost = `${testHostnamePrefix}.${resolvedDomain}`

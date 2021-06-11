@@ -37,7 +37,7 @@
   "infraRepoOwner": "ndlib",
   "infraRepoName": "dec-blueprints",
   "infraSourceBranch": "main",
-  "beehive:hostnamePrefix": "dec-collections",
+  "beehive:hostnamePrefix": "collections",
   "beehive:appRepoOwner": "ndlib",
   "beehive:appRepoName": "beehive",
   "beehive:appSourceBranch": "master",

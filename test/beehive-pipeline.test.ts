@@ -117,7 +117,7 @@ describe('BeehivePipeline', () => {
           networkStack: 'test.env.networkStackName',
           domainStack: 'test.env.domainStackName',
           createDns: 'true',
-          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-prep', // Adds -test to the provided hostname
+          'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix-test', // Adds -test to the provided hostname
           'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
           infraDirectory: '$CODEBUILD_SRC_DIR',
         },
