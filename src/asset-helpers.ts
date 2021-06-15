@@ -3,8 +3,7 @@ import { Repository } from '@aws-cdk/aws-ecr'
 import { DockerImageAsset, DockerImageAssetProps } from '@aws-cdk/aws-ecr-assets'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Annotations, Construct, Stack } from '@aws-cdk/core'
-import { Code } from '@aws-cdk/aws-lambda'
+import { Annotations, Construct } from '@aws-cdk/core'
 import { ISource, Source } from '@aws-cdk/aws-s3-deployment'
 
 export interface GetContainerImageProps extends DockerImageAssetProps {

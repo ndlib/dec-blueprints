@@ -1,6 +1,6 @@
 import * as cdk from '@aws-cdk/core'
 import { Bucket, BucketAccessControl, HttpMethods } from '@aws-cdk/aws-s3'
-import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-certificatemanager'
+import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
 import { ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
 import { CustomEnvironment } from './custom-environment'
@@ -8,7 +8,6 @@ import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { Cluster } from '@aws-cdk/aws-ecs'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface FoundationStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment

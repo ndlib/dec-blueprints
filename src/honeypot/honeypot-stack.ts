@@ -2,7 +2,6 @@ import * as cdk from '@aws-cdk/core'
 import { FargateTaskDefinition, FargatePlatformVersion } from '@aws-cdk/aws-ecs'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { SharedServiceStackProps } from '../shared-stack-props'
-import { FoundationStack } from '../foundation-stack'
 import { CustomEnvironment } from '../custom-environment'
 import { Port, SubnetType } from '@aws-cdk/aws-ec2'
 import { AssetHelpers } from '../asset-helpers'
@@ -11,7 +10,6 @@ import { FileSystem, LifecyclePolicy } from '@aws-cdk/aws-efs'
 import { RemovalPolicy } from '@aws-cdk/core'
 import elbv2 = require('@aws-cdk/aws-elasticloadbalancingv2')
 import ecs = require('@aws-cdk/aws-ecs')
-import ssm = require('@aws-cdk/aws-ssm')
 
 export interface HoneypotStackProps extends SharedServiceStackProps {
   readonly hostnamePrefix: string,
