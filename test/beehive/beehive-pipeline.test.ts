@@ -1,18 +1,20 @@
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../src/foundation-stack'
-import { BeehivePipelineStack, CDPipelineStackProps } from '../src/beehive/beehive-pipeline'
+import { FoundationStack } from '../../src/foundation-stack'
+import { BeehivePipelineStack, CDPipelineStackProps } from '../../src/beehive/beehive-pipeline'
 import { expect as expectCDK, objectLike, haveResourceLike, haveResource, arrayWith, stringLike } from '@aws-cdk/assert'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import { CustomEnvironment } from '../src/custom-environment'
-import { PipelineHostnames } from '../src/pipeline-constructs/hostnames'
-import helpers = require('../test/helpers')
+import { CustomEnvironment } from '../../src/custom-environment'
+import { PipelineHostnames } from '../../src/pipeline-constructs/hostnames'
+import { PipelineFoundationStack } from '../../src/pipeline-foundation-stack'
+import helpers = require('../helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
   env: CustomEnvironment
   app: cdk.App
   foundationStack: FoundationStack
+  pipelineFoundationStack: PipelineFoundationStack
   subject: BeehivePipelineStack
   pipelineProps: CDPipelineStackProps
 }
@@ -43,6 +45,7 @@ describe('BeehivePipeline', () => {
     env: lazyEval.env,
     honeycombHostnamePrefix: 'honeycomb-test',
   }))
+  lazyEval('pipelineFoundationStack', () => new PipelineFoundationStack(lazyEval.app, 'MyPipelineFoundationStack', { env: lazyEval.env }))
   lazyEval('pipelineProps', () => ({
     env: lazyEval.env,
     appRepoOwner: 'test.pipelineProp.appRepoOwner',
@@ -67,29 +70,26 @@ describe('BeehivePipeline', () => {
     notificationReceivers: 'test.pipelineProp.notificationReceivers',
     testFoundationStack: lazyEval.foundationStack,
     prodFoundationStack: lazyEval.foundationStack,
+    pipelineFoundationStack: lazyEval.pipelineFoundationStack,
   }))
   lazyEval('subject', () => new BeehivePipelineStack(lazyEval.app, 'MyBeehivePipelineStack', lazyEval.pipelineProps))
 
-  test('uses encrypted artifact bucket', () => {
-    // const pipelineStack = subject()
-    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::S3::Bucket', {
-      BucketEncryption: {
-        ServerSideEncryptionConfiguration: [
-          {
-            ServerSideEncryptionByDefault: {
-              SSEAlgorithm: 'aws:kms',
-            },
-          },
-        ],
+  test('puts its artifacts in the pipeline foundation stacks artifact bucket', () => {
+    expectCDK(lazyEval.subject).to(haveResourceLike('AWS::CodePipeline::Pipeline', objectLike({
+      ArtifactStore: {
+        Location: {
+          'Fn::ImportValue': 'MyPipelineFoundationStack:ExportsOutputRefBucket83908E7781C90AC0',
+        },
+        Type: 'S3',
       },
-    }))
+    })))
   })
 
   test('calls the CDKPipelineProject with the correct properties to create the test deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const BeehivePipelineStack = (await import('../../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 
@@ -134,9 +134,9 @@ describe('BeehivePipeline', () => {
 
   test('calls the CDKPipelineProject with the correct properties to create the production deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const BeehivePipelineStack = (await import('../../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 

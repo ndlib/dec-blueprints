@@ -1,7 +1,7 @@
 import { expect as expectCDK, haveResource, haveResourceLike } from '@aws-cdk/assert'
 import * as cdk from '@aws-cdk/core'
-import { BeehiveStack } from '../src/beehive/beehive-stack'
-import { FoundationStack } from '../src/foundation-stack'
+import { BeehiveStack } from '../../src/beehive/beehive-stack'
+import { FoundationStack } from '../../src/foundation-stack'
 
 describe('non-production infrastructure', () => {
   const stack = () => {
