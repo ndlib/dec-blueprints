@@ -13,6 +13,7 @@ import codebuild = require('@aws-cdk/aws-codebuild')
 import codepipeline = require('@aws-cdk/aws-codepipeline')
 import codepipelineActions = require('@aws-cdk/aws-codepipeline-actions')
 import cdk = require('@aws-cdk/core')
+import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 
 export interface CDPipelineStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment;
@@ -30,6 +31,7 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly owner: string;
   readonly contact: string;
   readonly slackNotifyStackName: string;
+  readonly pipelineFoundationStack: PipelineFoundationStack
   readonly prodFoundationStack: FoundationStack;
   readonly testFoundationStack: FoundationStack;
   readonly hostnames: PipelineHostnames
@@ -63,11 +65,6 @@ export class BeehivePipelineStack extends cdk.Stack {
     super(scope, id, props)
 
     const repoUrl = `https://github.com/${props.appRepoOwner}/${props.appRepoName}`
-
-    const artifactBucket = new Bucket(this, 'artifactBucket', {
-      encryption: BucketEncryption.KMS_MANAGED,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    })
 
     // Source Actions
     const appSource = new GitHubSource(this, 'AppCode', {
@@ -238,7 +235,7 @@ export class BeehivePipelineStack extends cdk.Stack {
 
     // Pipeline
     const pipeline = new codepipeline.Pipeline(this, 'DeploymentPipeline', {
-      artifactBucket,
+      artifactBucket: props.pipelineFoundationStack.artifactBucket,
       stages: [
         {
           actions: [appSource.action, infraSource.action],
