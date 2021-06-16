@@ -1,13 +1,13 @@
 import * as cdk from '@aws-cdk/core'
-import { FoundationStack } from '../src/foundation-stack'
-import { BeehivePipelineStack, CDPipelineStackProps } from '../src/beehive/beehive-pipeline'
+import { FoundationStack } from '../../src/foundation-stack'
+import { BeehivePipelineStack, CDPipelineStackProps } from '../../src/beehive/beehive-pipeline'
 import { expect as expectCDK, objectLike, haveResourceLike, haveResource, arrayWith, stringLike } from '@aws-cdk/assert'
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
-import { CustomEnvironment } from '../src/custom-environment'
-import { PipelineHostnames } from '../src/pipeline-constructs/hostnames'
-import { PipelineFoundationStack } from '../src/pipeline-foundation-stack'
-import helpers = require('../test/helpers')
+import { CustomEnvironment } from '../../src/custom-environment'
+import { PipelineHostnames } from '../../src/pipeline-constructs/hostnames'
+import { PipelineFoundationStack } from '../../src/pipeline-foundation-stack'
+import helpers = require('../helpers')
 
 // A set of variables that won't get set until used
 interface lazyEvals {
@@ -87,9 +87,9 @@ describe('BeehivePipeline', () => {
 
   test('calls the CDKPipelineProject with the correct properties to create the test deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const BeehivePipelineStack = (await import('../../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 
@@ -134,9 +134,9 @@ describe('BeehivePipeline', () => {
 
   test('calls the CDKPipelineProject with the correct properties to create the production deployment', async () => {
     // Mock the pipeine deploy then reimport its dependencies
-    jest.doMock('../src/pipeline-constructs/cdk-deploy')
-    const CDKPipelineDeploy = (await import('../src/pipeline-constructs/cdk-deploy')).CdkDeploy
-    const BeehivePipelineStack = (await import('../src/beehive/beehive-pipeline')).BeehivePipelineStack
+    jest.doMock('../../src/pipeline-constructs/cdk-deploy')
+    const CDKPipelineDeploy = (await import('../../src/pipeline-constructs/cdk-deploy')).CdkDeploy
+    const BeehivePipelineStack = (await import('../../src/beehive/beehive-pipeline')).BeehivePipelineStack
     const MockedCDKPipelineDeploy = mocked(CDKPipelineDeploy, true)
     MockedCDKPipelineDeploy.mockImplementation(helpers.mockCDKPipelineDeploy)
 
