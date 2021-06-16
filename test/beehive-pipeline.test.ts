@@ -5,6 +5,7 @@ import { expect as expectCDK, objectLike, haveResourceLike, haveResource, arrayW
 import { mocked } from 'ts-jest/utils'
 import getGiven from 'givens'
 import { CustomEnvironment } from '../src/custom-environment'
+import { PipelineHostnames } from '../src/pipeline-constructs/hostnames'
 import helpers = require('../test/helpers')
 
 // A set of variables that won't get set until used
@@ -54,7 +55,8 @@ describe('BeehivePipeline', () => {
     namespace: 'test.pipelineProp.namespace',
     qaSpecPath: 'test.pipelineProp.qaSpecPath',
     oauthTokenPath: 'test.pipelineProp.oauthTokenPath',
-    hostnamePrefix: 'test.pipelineProp.hostnamePrefix',
+    hostnames: new PipelineHostnames('test.pipelineProp.hostnamePrefix', lazyEval.env),
+    honeycombHostnames: new PipelineHostnames('test.pipelineProp.honeycombHostnamePrefix', lazyEval.env),
     dockerhubCredentialsPath: 'test.pipelineProp.dockerhubCredentialsPath',
     owner: 'test.pipelineProp.owner',
     contact: 'test.pipelineProp.contact',
@@ -121,6 +123,11 @@ describe('BeehivePipeline', () => {
           'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
           infraDirectory: '$CODEBUILD_SRC_DIR',
         },
+        additionalEnvironmentVariables: {
+          // Adds -test to the provided hostnames
+          PUBLIC_URL: { value: 'https://test.pipelineProp.hostnamePrefix-test.test.env.domainName' },
+          HONEYCOMB_URL: { value: 'https://test.pipelineProp.honeycombHostnamePrefix-test.test.env.domainName' },
+        },
       }),
     )
   })
@@ -162,6 +169,10 @@ describe('BeehivePipeline', () => {
           'beehive:hostnamePrefix': 'test.pipelineProp.hostnamePrefix',
           'beehive:appDirectory': '$CODEBUILD_SRC_DIR_AppCode/build',
           infraDirectory: '$CODEBUILD_SRC_DIR',
+        },
+        additionalEnvironmentVariables: {
+          PUBLIC_URL: { value: 'https://test.pipelineProp.hostnamePrefix.test.env.domainName' },
+          HONEYCOMB_URL: { value: 'https://test.pipelineProp.honeycombHostnamePrefix.test.env.domainName' },
         },
       }),
     )

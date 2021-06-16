@@ -1,6 +1,6 @@
 import * as cdk from '@aws-cdk/core'
 import { Bucket, BucketAccessControl, HttpMethods } from '@aws-cdk/aws-s3'
-import { Certificate, CertificateValidation, ICertificate } from '@aws-cdk/aws-certificatemanager'
+import { Certificate, ICertificate } from '@aws-cdk/aws-certificatemanager'
 import { ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import { HostedZone, IHostedZone } from '@aws-cdk/aws-route53'
 import { CustomEnvironment } from './custom-environment'
@@ -8,7 +8,6 @@ import { LogGroup, RetentionDays } from '@aws-cdk/aws-logs'
 import { PrivateDnsNamespace } from '@aws-cdk/aws-servicediscovery'
 import { HttpsAlb } from '@ndlib/ndlib-cdk'
 import { Cluster } from '@aws-cdk/aws-ecs'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface FoundationStackProps extends cdk.StackProps {
   readonly env: CustomEnvironment
@@ -20,15 +19,58 @@ export interface FoundationStackProps extends cdk.StackProps {
 }
 
 export class FoundationStack extends cdk.Stack {
+  /**
+   * The VPC to put all DEC services into
+   */
   public readonly vpc: Vpc
+
+  /**
+   * Shared log bucket to put logs for the stacks in this project
+   */
   public readonly logBucket: Bucket
+
+  /**
+   * The wildcard cert to use in all stacks. This will be imported from the specified
+   * domain stack.
+   */
   public readonly certificate: ICertificate
-  public readonly hostedZone: IHostedZone
+
+  /**
+   * The Route53 HostedZone. Note: This will be undefined when env.createDns is false
+   */
+  public readonly hostedZone: IHostedZone | undefined
+
+  /**
+   * Shared log group to put logs for the stacks in this project
+   */
   public readonly logs: LogGroup
+
+  /**
+   * Shared ALB for the project. Note: There are no checks to ensure that your rules
+   * do not conflict with other stacks, so make sure to inspect the rules that other
+   * stacks are creating.
+   */
   public readonly publicLoadBalancer: HttpsAlb
+
+  /**
+   * Shared ECS cluster
+   */
   public readonly cluster: Cluster
+
+  /**
+   * Shared Private DNS Namespace
+   */
   public readonly privateNamespace: PrivateDnsNamespace
+
+  /**
+   * Media bucket shared between Honeycomb and Buzz for audio/video files
+   */
   public readonly mediaBucket: Bucket
+
+  /**
+   * The SG that allows connectivity to the DB that will be used by all services
+   * in DEC. This DB is managed outside of this infra code.
+   */
   public readonly databaseSecurityGroup: ISecurityGroup
 
   constructor (scope: cdk.Construct, id: string, props: FoundationStackProps) {
@@ -55,14 +97,14 @@ export class FoundationStack extends cdk.Stack {
     }) as Vpc
     // #endregion
 
-    let certificateValidation = CertificateValidation.fromDns()
     if (props.env.useExistingDnsZone) {
       this.hostedZone = HostedZone.fromLookup(this, 'HostedZone', { domainName: props.env.domainName })
     } else {
-      this.hostedZone = new HostedZone(this, 'HostedZone', {
-        zoneName: props.env.domainName,
-      })
-      certificateValidation = CertificateValidation.fromDns(this.hostedZone)
+      if (props.env.createDns) {
+        this.hostedZone = new HostedZone(this, 'HostedZone', {
+          zoneName: props.env.domainName,
+        })
+      }
     }
 
     this.logs = new LogGroup(this, 'SharedLogGroup', {

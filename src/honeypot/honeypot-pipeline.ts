@@ -6,6 +6,7 @@ import { CustomEnvironment } from '../custom-environment'
 import { FoundationStack } from '../foundation-stack'
 import { PipelineFoundationStack } from '../pipeline-foundation-stack'
 import { RailsPipelineContainerProps, RailsPipeline, RailsPipelineStageProps } from '../pipeline-constructs/rails-pipeline'
+import { PipelineHostnames } from '../pipeline-constructs/hostnames'
 import cdk = require('@aws-cdk/core')
 
 export interface CDPipelineStackProps extends cdk.StackProps {
@@ -24,13 +25,10 @@ export interface CDPipelineStackProps extends cdk.StackProps {
   readonly pipelineFoundationStack: PipelineFoundationStack
   readonly testFoundationStack: FoundationStack
   readonly prodFoundationStack: FoundationStack
-  readonly hostnamePrefix: string
+  readonly hostnames: PipelineHostnames
 }
 
 export class HoneypotPipelineStack extends Stack {
-  readonly testHostnamePrefix: string
-  readonly prodHostnamePrefix: string
-
   constructor (scope: cdk.Construct, id: string, props: CDPipelineStackProps) {
     super(scope, id, props)
 
@@ -56,11 +54,16 @@ export class HoneypotPipelineStack extends Stack {
         resources: [cdk.Fn.sub('arn:aws:iam::${AWS::AccountId}:role/aws-service-role/ecs.application-autoscaling.amazonaws.com/AWSServiceRoleForApplicationAutoScaling_ECSService')],
         actions: ['iam:PassRole'],
       }))
-      if (stage.stageName === 'Test') {
-        deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+
+      if (props.testFoundationStack.hostedZone) {
+        if (stage.stageName === 'Test') {
+          deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.testFoundationStack.hostedZone.hostedZoneId))
+        }
       }
-      if (stage.stageName === 'Production') {
-        deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+      if (props.prodFoundationStack.hostedZone) {
+        if (stage.stageName === 'Production') {
+          deploy.project.addToRolePolicy(NamespacedPolicy.route53RecordSet(props.prodFoundationStack.hostedZone.hostedZoneId))
+        }
       }
       // Allow it to deploy alb things. The identifiers used for these are way too long so it truncates the prefix.
       // Have to just use a constant prefix regardless of whether its test or prod stack name.
@@ -116,12 +119,7 @@ export class HoneypotPipelineStack extends Stack {
     const createDns = props.env.createDns ? 'true' : 'false'
 
     const testNamespace = `${props.namespace}-test`
-    this.testHostnamePrefix = `${props.hostnamePrefix}-test`
-    const testHostname = `${this.testHostnamePrefix}.${props.testFoundationStack.hostedZone.zoneName}`
-
     const prodNamespace = `${props.namespace}-prod`
-    this.prodHostnamePrefix = props.hostnamePrefix
-    const prodHostname = `${this.prodHostnamePrefix}.${props.prodFoundationStack.hostedZone.zoneName}`
 
     const pipeline = new RailsPipeline(this, 'DeploymentPipeline', {
       env: props.env,
@@ -151,13 +149,13 @@ export class HoneypotPipelineStack extends Stack {
         configPath: `/all/${testNamespace}-honeypot`,
         namespace: testNamespace,
         stackname: `${testNamespace}-honeypot`,
-        hostname: testHostname,
+        hostname: props.hostnames.testHostname,
         onDeployCreated: addPermissions,
         additionalDeployContext: {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeypot:hostnamePrefix': this.testHostnamePrefix,
+          'honeypot:hostnamePrefix': props.hostnames.testHostnamePrefix,
           'honeypot:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         },
       },
@@ -167,13 +165,13 @@ export class HoneypotPipelineStack extends Stack {
         configPath: `/all/${prodNamespace}-honeypot`,
         namespace: prodNamespace,
         stackname: `${prodNamespace}-honeypot`,
-        hostname: prodHostname,
+        hostname: props.hostnames.prodHostname,
         onDeployCreated: addPermissions,
         additionalDeployContext: {
           networkStack: props.env.networkStackName,
           domainStack: props.env.domainStackName,
           createDns,
-          'honeypot:hostnamePrefix': this.prodHostnamePrefix,
+          'honeypot:hostnamePrefix': props.hostnames.prodHostnamePrefix,
           'honeypot:appDirectory': '$CODEBUILD_SRC_DIR_AppCode',
         },
       },

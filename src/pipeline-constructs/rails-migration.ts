@@ -1,5 +1,5 @@
 import { BuildSpec, BuildEnvironmentVariable, BuildEnvironmentVariableType, LinuxBuildImage, PipelineProject } from '@aws-cdk/aws-codebuild'
-import { Peer, Port, ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
+import { ISecurityGroup, SecurityGroup, Vpc } from '@aws-cdk/aws-ec2'
 import { ISecret } from '@aws-cdk/aws-secretsmanager'
 import { CodeBuildAction } from '@aws-cdk/aws-codepipeline-actions'
 import { PolicyStatement } from '@aws-cdk/aws-iam'

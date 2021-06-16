@@ -101,6 +101,7 @@ export interface CdkDeployProps extends PipelineProjectProps {
    */
   readonly additionalRuntimeEnvironments?: { [key: string]: string };
 
+  readonly additionalEnvironmentVariables?: { [name: string]: BuildEnvironmentVariable };
   /**
    * Run order to use for this deploy action. Default is 1
    */
@@ -160,6 +161,7 @@ export class CdkDeploy extends Construct {
           type: BuildEnvironmentVariableType.SECRETS_MANAGER,
           value: `${props.dockerCredentials.secretName}:password`,
         },
+        ...props.additionalEnvironmentVariables,
       },
       buildSpec: BuildSpec.fromObject({
         artifacts: {
@@ -179,6 +181,8 @@ export class CdkDeploy extends Construct {
           },
           pre_build: {
             commands: [
+              // Ensure empty directory exists. If any assets are missing, the AssetHelpers will use this to return a null asset.
+              'mkdir -p /var/empty',
               `cd ${appSourceDir}`,
               ...(props.appBuildCommands || []),
             ],

@@ -13,7 +13,6 @@ import { AssetHelpers } from '../asset-helpers'
 import { CnameRecord, HostedZone } from '@aws-cdk/aws-route53'
 import { ECSSecretsHelper } from '../ecs-secrets-helpers'
 import { Duration } from '@aws-cdk/core'
-import { StringParameter } from '@aws-cdk/aws-ssm'
 
 export interface BuzzStackProps extends SharedServiceStackProps {
   readonly env: CustomEnvironment,

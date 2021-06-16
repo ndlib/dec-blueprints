@@ -3,7 +3,8 @@ import { Repository } from '@aws-cdk/aws-ecr'
 import { DockerImageAsset, DockerImageAssetProps } from '@aws-cdk/aws-ecr-assets'
 import * as fs from 'fs'
 import * as path from 'path'
-import { Annotations, Construct, Stack } from '@aws-cdk/core'
+import { Annotations, Construct } from '@aws-cdk/core'
+import { ISource, Source } from '@aws-cdk/aws-s3-deployment'
 
 export interface GetContainerImageProps extends DockerImageAssetProps {
   /**
@@ -53,5 +54,17 @@ export class AssetHelpers {
       const dockerImageAsset = new DockerImageAsset(scope, id, props)
       return ContainerImage.fromDockerImageAsset(dockerImageAsset)
     }
+  }
+
+  /**
+   * Tries to get a S3 Bucket deployment source from a directory. If unfound, it will add a stack error,
+   * and return an empty Source.
+   */
+  static s3SourceFromAsset = (scope: Construct, sourceFilePath: string): ISource => {
+    if (!fs.existsSync(sourceFilePath)) {
+      Annotations.of(scope).addError(`Cannot deploy this stack. Bucket deployment source not found ${sourceFilePath}`)
+      return Source.asset('/var/empty')
+    }
+    return Source.asset(sourceFilePath)
   }
 }

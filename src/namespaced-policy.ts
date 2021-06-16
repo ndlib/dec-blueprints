@@ -1,5 +1,5 @@
 import { PolicyStatement } from '@aws-cdk/aws-iam'
-import { CfnCondition, Fn, Stack } from '@aws-cdk/core'
+import { Fn } from '@aws-cdk/core'
 
 export enum GlobalActions {
   None,
