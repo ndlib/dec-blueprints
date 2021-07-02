@@ -1,0 +1,43 @@
+#!/bin/bash
+# Usage:
+#   scripts/reindex 'namespace' 'space delimited list of collection ids'
+# Example: 
+#   scripts/reindex 'dec-prod' '1 2 99 100'
+
+namespace=$1
+collection_ids=$2
+
+# Logical Ids that cdk created for resources we need to lookup
+clusterLogId='ClusterEB0386A7'
+rakeTaskLogId='RailsRakeTaskDefinitionA0FDC5B4'
+appSGLogId='appSecurityGroupBD419CAB'
+
+# Resource id lookups
+dbSG=$(jq -r '.environments.prod.databaseConnectSG' cdk.context.json)
+networkStackName=$(jq -r '.environments.prod.networkStackName' cdk.context.json)
+subnet=$(aws cloudformation list-exports --region=us-east-1 --query 'Exports[?Name==`'$networkStackName':PrivateSubnet1ID`].Value' --output text)
+cluster=$(aws cloudformation describe-stack-resources --region us-east-1 --stack-name $namespace-foundation --logical-resource-id $clusterLogId --query 'StackResources[0].PhysicalResourceId' --output text)
+rakeTask=$(aws cloudformation describe-stack-resources --region us-east-1 --stack-name $namespace-honeycomb --logical-resource-id $rakeTaskLogId --query 'StackResources[0].PhysicalResourceId' --output text)
+appSG=$(aws cloudformation describe-stack-resources --region us-east-1 --stack-name $namespace-honeycomb --logical-resource-id $appSGLogId --query 'StackResources[0].PhysicalResourceId' --output text)
+
+if [[ $collection_ids = "" ]]
+then
+  echo 'Running reindex of all collections'
+  task_arn=$(aws ecs run-task --launch-type 'FARGATE' --region 'us-east-1' \
+    --cluster $cluster --task-definition $rakeTask \
+    --network-configuration "awsvpcConfiguration={subnets=[$subnet],securityGroups=[$dbSG, $appSG],assignPublicIp=DISABLED}" \
+    --overrides '{"containerOverrides": [ {"name": "railsContainer", "command": ["bundle", "exec", "rake", "search:index_all"]} ] }' \
+    --query 'tasks[0].containers[0].taskArn')
+  echo $task_arn
+else
+  echo 'Running reindex for list of collections'
+  for collection_id in $collection_ids; do
+    overrides='{"containerOverrides": [ {"name": "railsContainer", "command": ["bundle", "exec", "rake", "search:index['$collection_id']"]} ] }'
+    task_arn=$(aws ecs run-task --launch-type 'FARGATE' --region 'us-east-1' \
+      --cluster $cluster --task-definition $rakeTask \
+      --network-configuration "awsvpcConfiguration={subnets=[$subnet],securityGroups=[$dbSG, $appSG],assignPublicIp=DISABLED}" \
+      --overrides "$overrides" \
+      --query 'tasks[0].containers[0].taskArn')
+    echo $collection_id, $task_arn
+  done
+fi

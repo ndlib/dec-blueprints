@@ -95,6 +95,7 @@ export class SolrConstruct extends Construct {
     })
 
     const solrTaskDefinition = new FargateTaskDefinition(this, 'TaskDefinition', {
+      cpu: 1024,
       memoryLimitMiB: 2048,
     })
 
